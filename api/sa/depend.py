@@ -1,0 +1,84 @@
+from fastapi import Cookie, Request, Depends, HTTPException, status
+import logging
+import uuid
+from ..services.cruds.tenant import user_repo
+from api.services.employee_service import employee_service
+from .auth import validate_admin
+from .db import get_session, AsyncSession
+from .utils import device_hash, is_mobile
+
+logger = logging.getLogger()
+
+
+async def get_admin(request: Request, token: dict = Depends(validate_admin), db: AsyncSession = Depends(get_session) ):
+    """
+    get active admin from tenant and id
+    """
+    try:
+
+        admin = await user_repo.get(db, id=uuid.UUID(token.get('id')))
+
+        if not admin or not admin.is_active or admin.tenant_id != uuid.UUID(token.get('tenant_id')) :
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated (not valid active user))"
+            )
+        return admin
+    except Exception as e:
+        logger.debug(str(e))
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated (admin not validated))"
+            )
+
+
+async def get_employee(
+        request: Request,
+        db: AsyncSession = Depends(get_session),
+        act_employee: str = Cookie(None),
+        rft_employee: str = Cookie(None)
+    ):
+    """
+    get active employee from session
+    """
+    try:
+        
+        # if not mobile device raise error        
+        # if not is_mobile(request):
+        #     raise HTTPException(
+        #         status_code=status.HTTP_401_UNAUTHORIZED,
+        #         detail="Invalid Device"
+        #     )
+        print(request.headers)
+        print(act_employee,rft_employee)        
+        device = device_hash(request)
+
+        token = await employee_service.validate_employee_session(db, act_employee, rft_employee, device)
+        if token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid session"
+            )
+
+        # get employee details
+
+        employee = await employee_service.employee_repo.get(
+            db,
+            token.tenant_id, 
+            token.employee_id
+        )
+
+        if not employee or not employee.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="account is deactive or missing"
+            )     
+        return employee       
+
+    except Exception as e:
+        raise
+        # logger.error(str(e),stack_info=True)
+        # raise HTTPException(
+        #         status_code=status.HTTP_401_UNAUTHORIZED,
+        #         detail="Not authenticated (some auth issue))"
+        #     )

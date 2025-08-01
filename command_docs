@@ -1,0 +1,64 @@
+ mkdir -p api/app
+ mkdir web
+ touch api/app/main.py
+  touch api/app/__init__.py
+ echo """
+from fastapi import FastAPI
+
+app = FastAPI(title="AttendanceApp")
+
+
+@app.get('/')
+async def home():
+    return "Hello From AttendanceApp"
+
+ """ > api/app/main.py
+
+uv run fastapi dev api/main.py
+
+uv run alembic init --package ./api/alembic
+
+npm init vite@latest web --template vue
+
+cd web
+
+npm install
+
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+
+
+npm create @vite-pwa/pwa@latest
+npm add -D vite-plugin-pwa @vite-pwa/assets-generator
+create an icon public/pwa-icon.png
+npx pwa-asset-generator --preset minimal public/myicon.png 
+
+npx pwa-asset-generator public/myicon.png public/pwa \
+  --favicon public/pwa \
+  --mstile public/pwa \
+  --icon public/pwa \
+  --index ./index.html \
+  --path /pwa \
+  --preset minimal
+
+
+edit vite and verify correct path after public for assest
+
+npm install -D tailwindcss@3 postcss autoprefixer
+
+npx tailwindcss init -p
+
+'
+export default {
+  content: [
+        "./index.html",
+        "./src/**/*.{vue,js,ts,jsx,tsx}",    
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+
+'
+
+naive-ui
