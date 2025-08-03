@@ -1,0 +1,109 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.json
+*.egg
+
+# PyInstaller
+#  Usually these files are written by a python script and do not need to be committed
+#  unless they are part of a build process that you want to track
+#  You can uncomment the following lines if you want to ignore them
+# build/
+# dist/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.coverage
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Pytest cache
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Backup files
+*.bak
+
+# IDE files:
+.project
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.tmproj
+
+# macOS files
+.DS_Store
+
+# Virtualenv
+# Ignore virtualenv environments created by virtualenv, poetry, etc.
+# Virtual environments are typically located at the project root.
+# venv/
+# .venv/
+# If you are using poetry, you may also need to ignore the poetry.lock file
+# poetry.lock
+
+# Python-specific build artifacts
+__pycache__/
+# mypy cache
+.mypy_cache/
+# Pydoc cache
+.pydoc/
+
+# You can add other things here that are specific to your project, like secrets.
