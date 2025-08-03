@@ -18,6 +18,7 @@ from ..services.cruds.tenant import (
     GeoMarking, GeoMarkingCreate, GeoMarkingUpdate, geomarking_repo
     )
 from api.services.employee_service import employee_service
+from api.models import EmployeeCreateSchema
 
 
 logger = logging.getLogger()
@@ -39,10 +40,15 @@ async def admin_login(
         logger.debug(str(e))
         raise HTTPException(status_code=400, detail="invalid credentials")
     payload = {'id': admin.id, 'tenant_id': admin.tenant_id}
-    token = create_admin_access_token(request=request, data=payload)
+    token = create_admin_access_token(request, payload, settings.admin_access_token_expiry_minute*60)
     response.set_cookie("access_token_admin", token, httponly=True, max_age=3600 * 24)
     return {"access_token": token}
 
+
+@router.post('/admin/logout')
+def logout(response: Response):
+    response.delete_cookie("access_token_admin")  # or your cookie name
+    return {"message": "Logged out"}
 
 @router.get('/admin/me')
 async def get_me(admin=Depends(get_admin)):
@@ -50,10 +56,16 @@ async def get_me(admin=Depends(get_admin)):
 
 
 # user apis
-@router.post('/admin/tenants/employee')
-async def create_tenant_employee(employee: EmployeeCreate, admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
-    employee.tenant_id = admin.tenant_id
-    return await employee_repo.create(db, employee)
+@router.post('/admin/tenant/employee')
+async def create_tenant_employee(employee: EmployeeCreateSchema, admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
+    employee_create = EmployeeCreate.model_validate(
+        {
+         **employee.model_dump(),
+         'tenant_id': admin.tenant_id
+         }
+    )
+    # employee_create.tenant_id = admin.tenant_id
+    return await employee_repo.create(db, employee_create)
 
 
 @router.get('/admin/tenant/employee/{id}')
@@ -61,12 +73,12 @@ async def get_tenant_employee(id: uuid.UUID, admin: User = Depends(get_admin), d
     return await employee_repo.get(db, admin.tenant_id, id)
 
 
-@router.get('/admin/tenant/employee/{id}/deactivate')
+@router.put('/admin/tenant/employee/{id}/deactivate')
 async def deactivate_tenant_employee(id: uuid.UUID, admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
     return await employee_repo.deactivate(db, admin.tenant_id, id)
 
 
-@router.get('/admin/tenant/employee/{id}/activate')
+@router.put('/admin/tenant/employee/{id}/activate')
 async def activate_tenant_employee(id: uuid.UUID, admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
     return await employee_repo.activate(db, admin.tenant_id, id)
 
@@ -74,6 +86,11 @@ async def activate_tenant_employee(id: uuid.UUID, admin: User = Depends(get_admi
 @router.get('/admin/tenant/employees')
 async def get_tenant_employees(admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
     return await employee_repo.get_all(db, admin.tenant_id)
+
+
+@router.get('/admin/tenant/employees/status')
+async def get_tenant_employees(admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
+    return await employee_repo.get_employee_status(db,admin.tenant_id)
 
 
 @router.post('/admin/tenant/employees/{id}/idtoken')

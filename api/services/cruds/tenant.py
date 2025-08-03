@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, desc
+from sqlmodel import func, desc, text
 from typing import List
 import uuid
 from datetime import date, datetime, timedelta
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from ...models import (
     Tenant, TenantCreate, TenantUpdate,
     User, UserCreate, UserUpdate,
@@ -85,6 +85,54 @@ class EmployeeRepo(CRUDBase[Employee, EmployeeCreate, EmployeeUpdate]):
         obj_in.is_active = True
         return await super().update(db, id, obj_in)
 
+    async def get_employee_status(self, db: AsyncSession, tenant_id: uuid.UUID):
+
+        today = date.today()
+
+        attendance_subquery = (
+            select(
+                Attendance.employee_id,
+                Attendance.status,
+                func.max(Attendance.timestamp).label("latest_time")
+            )
+            .where(func.date(Attendance.timestamp) == today)
+            .where(Attendance.tenant_id == tenant_id)
+            .group_by(Attendance.employee_id)
+            .subquery()
+        )
+
+        token_subquery = (
+            select(Token.employee_id, Token.token_type)
+            .where(Token.token_type == "refresh_token_employee")
+            .where(Token.tenant_id == tenant_id)            
+            .subquery()
+        )
+
+        statement = (
+            select(
+                Employee,
+                attendance_subquery.c.status.label("latest_status"),
+                token_subquery.c.token_type
+            )
+            .join(attendance_subquery, attendance_subquery.c.employee_id == Employee.id, isouter=True)
+            .join(token_subquery, token_subquery.c.employee_id == Employee.id, isouter=True)
+            .where(Employee.tenant_id == tenant_id)
+        )
+
+        results = await db.execute(statement)
+        rows = results.all()
+
+        # Example of processing the result
+        employee_data = []
+        for emp, attendance, token in rows:
+            
+            employee_data.append({
+                ** emp.model_dump(),
+                "last_marked_today": attendance,
+                "device_locked": token is not None
+            })
+        return employee_data
+    
 
 class TokenRepo(CRUDBase[Token, TokenCreate, TokenUpdate]):
     
