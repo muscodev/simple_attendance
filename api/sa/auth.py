@@ -2,6 +2,7 @@
 from fastapi import Cookie, HTTPException, status, Request
 from datetime import datetime, timedelta
 from jose import jwt
+import time
 from passlib.hash import pbkdf2_sha256
 import base64
 from enum import Enum
@@ -22,8 +23,6 @@ class Levels(Enum):
 
 SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
-OWNER_ACCESS_TOKEN_EXPIRE_MINUTES = 15
-ADMIN_ACCESS_TOKEN_EXPIRE_MINUTES = 60
 EMPLOYEE_ACCESS_TOKEN_EXPIRE_MINUTES = 20*60
 
 
@@ -45,22 +44,22 @@ def get_password_hash(password):
     return pbkdf2_sha256.hash(password)
 
 
-def create_owner_access_token(data: dict, expires_delta: timedelta = None):
+def create_owner_access_token(data: dict, expire_second: int = None):
     "create jwt token for and update level_ to the owner"
     data['level_'] = Levels.OWNER.value
     to_encode = data.copy()
-    expire = datetime.now() + (expires_delta or timedelta(minutes=OWNER_ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
+    if expire_second:
+        to_encode.update({"exp": time.time() + expire_second})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_admin_access_token(request: Request, data: dict, expires_delta: timedelta = None):
+def create_admin_access_token(request: Request, data: dict, expire_second: int = None):
     "create jwt token for admin, and update level_ to the admin "
     data.update(create_agent_hash(request))
     data['level_'] = Levels.ADMIN.value
     to_encode = {k: base64.b64encode(str(v).encode("utf-8")).decode("utf-8")+'0' for k, v in data.items()}
-    expire = datetime.now() + (expires_delta or timedelta(minutes=ADMIN_ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
+    if expire_second:
+        to_encode.update({"exp": time.time() + expire_second})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
