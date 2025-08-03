@@ -75,9 +75,16 @@ class EmployeeBase(SQLModel):
     is_active: bool = True
 
 
-class EmployeeCreate(EmployeeBase):
-    pass  # Can customize if needed
+class EmployeeCreateSchema(SQLModel):
+    employee_no: str
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    is_active: bool = True
 
+
+class EmployeeCreate(EmployeeBase):
+    pass
 
 class EmployeeUpdate(SQLModel):
     employee_no: Optional[str] = None
