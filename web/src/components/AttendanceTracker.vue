@@ -4,10 +4,10 @@
     <div class="mb-4 text-center">
       <h1 class="text-2xl font-bold">
         <p v-if="employee.state=='IN'" class="px-6 py-2 rounded hover:bg-green-200 border border-green-600">{{
-          employee.name }}</p>
+          me?.name }}</p>
         <p v-else-if="employee.state=='OUT'" class="px-6 py-2 rounded hover:bg-red-200 border border-red-600">{{
-          employee.name }}</p>
-        <p v-else class="px-6 py-2 rounded hover:bg-yellow-200 border border-yellow-600">{{ employee.name }}</p>
+          me?.name }}</p>
+        <p v-else class="px-6 py-2 rounded hover:bg-yellow-200 border border-yellow-600">{{ me?.name }}</p>
       </h1>
       <p v-if="employee.todayIn.time" class="text-sm text-gray-600">
         <span>IN : {{ employee.todayIn.time.toLocaleTimeString() }}
@@ -31,12 +31,13 @@
 
     <!-- IN/OUT Buttons -->
     <div class="text-center">
-      <button v-if="employee.state!='IN'"
-        class="px-6 py-2 rounded font-semibold text-white bg-green-500 hover:bg-green-600" @click="markIn">
+      <button v-if="me?.state?.status!='IN'"
+        class="px-6 py-2 rounded font-semibold text-white bg-green-500" @click="markIn">
         IN
       </button>
-      <button v-if="employee.state=='IN'"
-        class="px-6 py-2 rounded font-semibold text-white bg-red-500 hover:bg-red-600 " @click="markOut">
+      <button v-if="me?.state?.status=='IN'"
+        class="px-6 py-2 rounded font-semibold text-white bg-red-500 "
+        @click="markOut">
         OUT
       </button>
     </div>
@@ -49,8 +50,12 @@
 <script setup>
 import { ref,onMounted,reactive,computed } from 'vue'
 import { NCard ,useMessage} from 'naive-ui'
-import { getme,empMarkIn,empMarkOut  } from '../services/employeeService.js'
+import { getme, empMarkIn, empMarkOut  } from '../services/employeeService.js'
 
+
+const props = defineProps({
+  me: Object
+});
 
 const employee = reactive({
   id: '',
@@ -96,14 +101,18 @@ const message = useMessage()
 
 
 const getUserLocation = () => {
+
       if ('geolocation' in navigator) {
+
         navigator.geolocation.getCurrentPosition(
           (position) => {
+
             locationError.value = null;
             latitude.value = position.coords.latitude;
             longitude.value = position.coords.longitude;
           },
           (error) => {
+
             latitude.value = null;
             longitude.value = null;              
             locationError.value = error.message;
@@ -118,12 +127,12 @@ const getUserLocation = () => {
       }
     };
 
-async function updateEmployee(){
-  const response = await getme();
-  employee.name = response.data.name;    
-  employee.id = response.data.id;    
+// async function updateEmployee(){
+//   const response = await getme();
+//   employee.name = response.data.name;    
+//   employee.id = response.data.id;    
 
-}
+// }
 
 async function markIn() {
 
@@ -161,6 +170,7 @@ async function markIn() {
 
 async function markOut() {
   getUserLocation();
+  console.log("markout",latitude.value, longitude.value,locationError.value);
 
   if(latitude.value && longitude.value && locationError.value==null){
     // send mark in 
@@ -170,6 +180,7 @@ async function markOut() {
     }
     
     let response = await empMarkOut(coordinate);
+    console.log("markout");
     // previous state
     if (employee.state == 'IN' && !employee.todayOut.time){
       employee.todayOut.time = new Date(response.data.time);
@@ -186,10 +197,8 @@ async function markOut() {
   }
 }
 
-
-
 onMounted(async () => {   
   getUserLocation();
-  await updateEmployee();
+  // await updateEmployee();
 });    
 </script>

@@ -14,7 +14,6 @@ import router from '../../router'
 
 const route = useRoute()
 const token = route.params.token
-console.log(token);
 const message = ref('please wait..')
 
 

@@ -1,7 +1,7 @@
 import api from "../utlis/api"
 
 export function getme(){
-    return api.get(`/api/employee/`);
+    return api.get(`/api/employee/me`);
 }
 
 
