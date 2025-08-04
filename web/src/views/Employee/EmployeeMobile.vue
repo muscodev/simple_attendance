@@ -5,7 +5,7 @@
     
     <NMessageProvider>
 
-      <AttendanceTracker :me="employee" class="border-4 rounded-lg border-indigo-500 " />
+      <AttendanceTracker :me="employee" class="border-4 rounded-lg border-indigo-500 " @update="updateMe"/>
 
     </NMessageProvider>
 

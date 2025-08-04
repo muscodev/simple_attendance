@@ -3,27 +3,27 @@
   <NCard class="flex flex-col items-center justify-between">
     <div class="mb-4 text-center">
       <h1 class="text-2xl font-bold">
-        <p v-if="employee.state=='IN'" class="px-6 py-2 rounded hover:bg-green-200 border border-green-600">{{
+        <p v-if="me?.state?.status=='IN'" class="px-6 py-2 rounded hover:bg-green-200 border border-green-600">{{
           me?.name }}</p>
-        <p v-else-if="employee.state=='OUT'" class="px-6 py-2 rounded hover:bg-red-200 border border-red-600">{{
+        <p v-else-if="me?.state?.status=='OUT'" class="px-6 py-2 rounded hover:bg-red-200 border border-red-600">{{
           me?.name }}</p>
         <p v-else class="px-6 py-2 rounded hover:bg-yellow-200 border border-yellow-600">{{ me?.name }}</p>
       </h1>
-      <p v-if="employee.todayIn.time" class="text-sm text-gray-600">
-        <span>IN : {{ employee.todayIn.time.toLocaleTimeString() }}
-        <a :href="`https://www.google.com/maps?q=${employee.todayIn.location.lat},${employee.todayIn.location.lon}`" target="_blank">
-          <template v-if="employee.todayIn.time">
-            [{{ employee.todayIn.locationDetails.place.name }}({{
-            employee.todayIn.locationDetails.dist.toFixed(2) }} Km)]
+      <p v-if="me?.today_in.timestamp" class="text-sm text-gray-600">
+        <span>IN : {{ new Date(me.today_in.timestamp).toLocaleTimeString() }}
+        <a :href="`https://www.google.com/maps?q=${me.today_in.latitude},${me.today_in.longitude}`" target="_blank">
+          <template v-if="me.today_in.timestamp">
+            [{{ me?.today_in_near.name }}({{
+            me.today_in.distance_from_marking.toFixed(2) }} Km)]
             </template>
         </a></span>
       </p>
-      <p v-if="employee.todayOut.time" class="text-sm text-gray-600">
-       <span> OUT: {{ employee.todayOut.time.toLocaleTimeString() }}
-        <a :href="`https://www.google.com/maps?q=${employee.todayOut.location.lat},${employee.todayOut.location.lon}`" target="_blank">
+      <p v-if="me?.state?.status == 'OUT'" class="text-sm text-gray-600">
+       <span> OUT: {{ new Date(me.state.timestamp).toLocaleTimeString() }}
+        <a :href="`https://www.google.com/maps?q=${me?.state?.latitude},${me?.state?.latitude}`" target="_blank">
          
-            [{{ employee.todayOut.locationDetails.place.name }}({{
-            employee.todayOut.locationDetails.dist.toFixed(2) }} Km)]
+            [{{ me?.state_near.name }}({{
+            me?.state.distance_from_marking.toFixed(2) }} Km)]
    
         </a></span>
       </p>      
@@ -48,14 +48,16 @@
 </template>
 
 <script setup>
-import { ref,onMounted,reactive,computed } from 'vue'
+import { ref,onMounted,reactive,computed, defineEmits } from 'vue'
 import { NCard ,useMessage} from 'naive-ui'
-import { getme, empMarkIn, empMarkOut  } from '../services/employeeService.js'
+import { empMarkIn, empMarkOut  } from '../services/employeeService.js'
 
 
 const props = defineProps({
   me: Object
 });
+
+const emits = defineEmits(['update'])
 
 const employee = reactive({
   id: '',
@@ -144,26 +146,28 @@ async function markIn() {
       lon:longitude.value
     }
     let response = await empMarkIn(coordinate);
+    message.success("Markin Success");
+    emits('update');
     // on success response update 
-    if (employee.state == 'None' && !employee.todayIn.time){
-      employee.todayIn.time = new Date(response.data.time);
-      employee.todayIn.location.lat = latitude.value;
-      employee.todayIn.location.lon = longitude.value;
-      employee.todayIn.locationDetails = response.data.nearest;
-    }
-    employee.state =  response.data.state
-    employee.time = new Date(response.data.time);
-    employee.location.lat = latitude.value;
-    employee.location.lon = longitude.value;
+    // if (employee.state == 'None' && !employee.todayIn.time){
+    //   employee.todayIn.time = new Date(response.data.time);
+    //   employee.todayIn.location.lat = latitude.value;
+    //   employee.todayIn.location.lon = longitude.value;
+    //   employee.todayIn.locationDetails = response.data.nearest;
+    // }
+    // employee.state =  response.data.state
+    // employee.time = new Date(response.data.time);
+    // employee.location.lat = latitude.value;
+    // employee.location.lon = longitude.value;
     
 
-    employee.todayOut.time = null;
-    employee.todayOut.location.lat = null;
-    employee.todayOut.location.lon = null;      
-    employee.todayOut.locationDetails =  {
-      place: null,
-      dist: null
-    };      
+    // employee.todayOut.time = null;
+    // employee.todayOut.location.lat = null;
+    // employee.todayOut.location.lon = null;      
+    // employee.todayOut.locationDetails =  {
+    //   place: null,
+    //   dist: null
+    // };      
   }
     
 }
@@ -180,20 +184,22 @@ async function markOut() {
     }
     
     let response = await empMarkOut(coordinate);
+    message.success("MarkOut Success");
     console.log("markout");
+    emits('update');
     // previous state
-    if (employee.state == 'IN' && !employee.todayOut.time){
-      employee.todayOut.time = new Date(response.data.time);
-      employee.todayOut.location.lat = latitude.value;
-      employee.todayOut.location.lon = longitude.value;
-      employee.todayOut.locationDetails = response.data.nearest;
+    // if (employee.state == 'IN' && !employee.todayOut.time){
+    //   employee.todayOut.time = new Date(response.data.time);
+    //   employee.todayOut.location.lat = latitude.value;
+    //   employee.todayOut.location.lon = longitude.value;
+    //   employee.todayOut.locationDetails = response.data.nearest;
 
-    }    
-    // on success response update 
-    employee.state =  response.data.state
-    employee.time = new Date(response.data.time);
-    employee.location.lat = latitude.value;
-    employee.location.lon = longitude.value; 
+    // }    
+    // // on success response update 
+    // employee.state =  response.data.state
+    // employee.time = new Date(response.data.time);
+    // employee.location.lat = latitude.value;
+    // employee.location.lon = longitude.value; 
   }
 }
 
