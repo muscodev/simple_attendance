@@ -61,7 +61,11 @@ class userRepo(CRUDBase[User, UserCreate, UserUpdate]):
 class EmployeeRepo(CRUDBase[Employee, EmployeeCreate, EmployeeUpdate]):
 
     async def get(self, db: AsyncSession, tenant_id: uuid.UUID, id: uuid.UUID):
-        return await self._get(db, select(self.model).where(self.model.tenant_id == tenant_id))
+        return await self._get(
+            db,
+            select(self.model)
+            .where(self.model.tenant_id == tenant_id)
+            .where(self.model.id == id))
     
     async def get_all(self, db, tenant_id: uuid.UUID):
         return await super()._get_all(db, query=select(self.model).where(self.model.tenant_id == tenant_id))
@@ -214,13 +218,14 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
         db: AsyncSession,
         tenant_id: uuid.UUID,
         employee_id: uuid.UUID
-    ) -> Attendance:
+    ):
 
         today = date.today()  # <class 'datetime.date'>
         start_of_today = datetime.combine(today, datetime.min.time())
         start_of_tomorrow = start_of_today + timedelta(days=1)
         query = (
-            select(Attendance)
+            select(GeoMarking, Attendance)
+            .join(GeoMarking, Attendance.geo_marking_id == GeoMarking.id)
             .where(Attendance.tenant_id == tenant_id)
             .where(Attendance.employee_id == employee_id)
             .where(Attendance.timestamp >= start_of_today)
@@ -228,7 +233,10 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
             .order_by(desc(Attendance.timestamp))
             .limit(1)
         )
-        return await self._get(db, query)
+        row = await self._getfirst(db, query)
+        if row:
+            return row  # (Attendance, GeoMarking)
+        return None, None  # Always return a tuple    
 
     async def today_in(
         self,
@@ -241,7 +249,7 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
         start_of_today = datetime.combine(today, datetime.min.time())
         start_of_tomorrow = start_of_today + timedelta(days=1)
         query = (
-            select(Attendance)
+            select(GeoMarking, Attendance)
             .where(Attendance.tenant_id == tenant_id)
             .where(Attendance.employee_id == employee_id)
             .where(Attendance.status == 'IN')
@@ -250,7 +258,10 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
             .order_by(Attendance.timestamp)
             .limit(1)
         )
-        return await self._get(db, query)
+        row = await self._getfirst(db, query)
+        if row:
+            return row  # (Attendance, GeoMarking)
+        return None, None  # Always return a tuple       
 
 tenant_repo = TenantRepo(Tenant)
 user_repo = userRepo(User)

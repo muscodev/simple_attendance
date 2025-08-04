@@ -22,7 +22,16 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, updateSchemaType]):
         query = query if query is not None else select(self.model)
         result = await db.execute(query)
         return result.scalar_one_or_none()
-
+    
+    async def _getfirst(
+        self,
+        db: AsyncSession,
+        query: Optional[Select] = None
+    ) -> Optional[ModelType]:
+        query = query if query is not None else select(self.model)
+        result = await db.execute(query)
+        return result.first()
+    
     async def get(
         self,
         db: AsyncSession,

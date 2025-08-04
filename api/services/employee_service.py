@@ -316,7 +316,7 @@ class EmployeeService:
             employee.tenant_id
         )
         nearest, dist = None, 0
-        if marked_locations :
+        if marked_locations:
             nearest, dist = geo.find_nearest(
                 marked_locations,
                 coordinates.model_dump(),
@@ -332,7 +332,7 @@ class EmployeeService:
             distance_from_marking=dist
         )
         # verify the last status of attendance
-        last_mark = await self.attendance_repo.last_mark_today(
+        _, last_mark = await self.attendance_repo.last_mark_today(
             db,
             employee.tenant_id,
             employee.id
@@ -371,7 +371,7 @@ class EmployeeService:
             status='OUT'
         )        
         # verify the last status of attendance
-        last_mark = await self.attendance_repo.last_mark_today(
+        _, last_mark = await self.attendance_repo.last_mark_today(
             db,
             employee.tenant_id,
             employee.id
@@ -384,11 +384,14 @@ class EmployeeService:
 
 
     async def get_state(self, tenant_id: uuid.UUID, employee_id: uuid.UUID, db: AsyncSession):
-        state = await self.attendance_repo.last_mark_today(db, tenant_id, employee_id)
-        today_in = await self.attendance_repo.today_in(db, tenant_id, employee_id)
+        state_near, state = await self.attendance_repo.last_mark_today(db, tenant_id, employee_id)
+        today_in_near, today_in = await self.attendance_repo.today_in(db, tenant_id, employee_id)
         return {
             'state': state.model_dump() if state else {},
+            'state_near': state_near.model_dump() if state_near else None,
+            'today_in_near': today_in_near.model_dump() if today_in_near else None,
             'today_in': today_in.model_dump() if today_in else {}
         }
+
 
 employee_service = EmployeeService()
