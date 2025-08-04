@@ -230,6 +230,27 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
         )
         return await self._get(db, query)
 
+    async def today_in(
+        self,
+        db: AsyncSession,
+        tenant_id: uuid.UUID,
+        employee_id: uuid.UUID
+    ) -> Attendance:
+
+        today = date.today()  # <class 'datetime.date'>
+        start_of_today = datetime.combine(today, datetime.min.time())
+        start_of_tomorrow = start_of_today + timedelta(days=1)
+        query = (
+            select(Attendance)
+            .where(Attendance.tenant_id == tenant_id)
+            .where(Attendance.employee_id == employee_id)
+            .where(Attendance.status == 'IN')
+            .where(Attendance.timestamp >= start_of_today)
+            .where(Attendance.timestamp < start_of_tomorrow)
+            .order_by(Attendance.timestamp)
+            .limit(1)
+        )
+        return await self._get(db, query)
 
 tenant_repo = TenantRepo(Tenant)
 user_repo = userRepo(User)

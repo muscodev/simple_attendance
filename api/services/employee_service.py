@@ -315,19 +315,20 @@ class EmployeeService:
             db,
             employee.tenant_id
         )
-
-        nearest, dist = geo.find_nearest(
-            marked_locations,
-            coordinates.model_dump(),
-            location_extract_method=lambda loc: (loc.latitude, loc.longitude)
-        )
+        nearest, dist = None, 0
+        if marked_locations :
+            nearest, dist = geo.find_nearest(
+                marked_locations,
+                coordinates.model_dump(),
+                location_extract_method=lambda loc: (loc.latitude, loc.longitude)
+            )
         obj_in = AttendanceCreate(
             tenant_id=employee.tenant_id,
             employee_id=employee.id,
             timestamp=datetime.now(),
             latitude=coordinates.lat,
             longitude=coordinates.lon,
-            geo_marking_id=nearest.id,
+            geo_marking_id=nearest.id if nearest else None,
             distance_from_marking=dist
         )
         # verify the last status of attendance
@@ -381,5 +382,13 @@ class EmployeeService:
         # mark attendance in to table
         return await self.attendance_repo.create(db, obj_in), nearest
 
+
+    async def get_state(self, tenant_id: uuid.UUID, employee_id: uuid.UUID, db: AsyncSession):
+        state = await self.attendance_repo.last_mark_today(db, tenant_id, employee_id)
+        today_in = await self.attendance_repo.today_in(db, tenant_id, employee_id)
+        return {
+            'state': state.model_dump() if state else {},
+            'today_in': today_in.model_dump() if today_in else {}
+        }
 
 employee_service = EmployeeService()

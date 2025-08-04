@@ -55,8 +55,16 @@ async def employee_login(
 
 
 @router.get("/employee/me")
-async def get_me(employee: Employee = Depends(get_employee)):
-    return employee
+async def get_me(
+    employee: Employee = Depends(get_employee),
+    db: AsyncSession = Depends(get_session),
+):
+    states = await employee_service.get_state(employee.tenant_id, employee.id, db)
+
+    return {
+        **employee.model_dump(),
+        **states
+    }
 
 
 @router.post("/employee/markin")
