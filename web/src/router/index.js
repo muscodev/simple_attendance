@@ -1,17 +1,36 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import AdminPage from '../views/AdminPage.vue'
+// import AdminPage from '../views/Admin/AdminPage.vue'
+import AdminLogin from '../views/Admin/AdminLogin.vue'
+import EmployeePage from '../views/Admin/EmployeePage.vue'
+import EmployeeMobile from '../views/Employee/EmployeeMobile.vue'
 import { getDeviceType  } from '../utlis/device.js'
-import EmployeePage from '../views/EmployeePage.vue'
 import NotAllowed from '../components/NotAllowed.vue'
 import OwnerLoginPage from '../views/Owner/LoginPage.vue'
 import OwnerDashBoard from '../views/Owner/DashBoard.vue'
+import AdminLayout from '../views/Admin/AdminLayout.vue'
+import EmpLoginPage from '../views/Employee/LoginPage.vue'
 
 let device = getDeviceType();
-
+console.log(device);
 let routes = [
+    {
+    path: '/admin/login',
+    component: AdminLogin
+  },
   {
     path: '/admin',
-    component: AdminPage
+    component: AdminLayout,
+    children: [
+      // {
+      //   path: '/',         
+      //   component: Dashboard,
+      // },
+      {
+        path: 'employees',      
+        component: EmployeePage,
+      },
+
+    ],
   },
   {
     path: '/owner/login',
@@ -27,16 +46,20 @@ let routes = [
 
 if (device=='mobile'){
 routes.push(
-      {
+    {
       path: '/',
-      component: EmployeePage
+      component: EmployeeMobile
+    },
+    {
+      path: '/e/:token',
+      component: EmpLoginPage
     }
 )
 }else{
   routes.push(
       {
       path: '/',
-      component: NotAllowed
+      redirect: '/admin',
     }
 )
 }
