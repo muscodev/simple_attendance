@@ -23,3 +23,15 @@ export function get_near_locations(){
 export function authenticateEmployee(token){
     return api.post(token);
 }
+
+export function login(token) {
+    return api.get(
+        `/api/e/t/${token}`, null,
+        {
+            withCredentials: true,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        }
+    );
+}
