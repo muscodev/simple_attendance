@@ -74,14 +74,18 @@ class EmployeeService:
         payload = {"employee_id": str(employee_id), "tenant_id": str(tenant),"level_": Levels.EMPLOYEE.value, "purpose": "auth_refresh"}
         return create_token(payload) 
 
-    def validate_access_token(self, token: str) -> JwtToken | None:
+    def validate_access_token(self, token: str = None) -> JwtToken | None:
+        if token is None:
+            return None
         data = validate_token(token)
         if not data or data.get("purpose") != "auth":
             return None
         return JwtToken(**data) if data is not None and data.get("level_") == Levels.EMPLOYEE.value else None
 
-    def validate_refresh_token(self, token: str) -> JwtToken | None:
+    def validate_refresh_token(self, token: str = None) -> JwtToken | None:
         """ Retun True|None"""
+        if token is None:
+            return None        
         data = validate_token(token)
         if not data or data.get("purpose") != "auth_refresh":
             return None
@@ -94,20 +98,18 @@ class EmployeeService:
         refresh_token: str,
         device_hash: str
     ) -> Token | None:
-        print(access_token,refresh_token)
         # jwt verify
         data = self.validate_access_token(access_token)
 
         if data is None:
-            logger.error("jwt access token expired")
+            logger.error("jwt access token expired or missing")
             # jwt expied 
-
             # validate refresh jwt token
             refresh = self.validate_refresh_token(refresh_token)
             
             # expired refresh token
             if refresh is None:
-                logger.error("jwt access token expired")
+                logger.error("jwt refresh token expired or missing")
             # return expired please contact Admin
                 return None
             

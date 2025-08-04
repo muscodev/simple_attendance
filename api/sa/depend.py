@@ -42,6 +42,14 @@ async def get_employee(
     get active employee from session
     """
     try:
+
+        # handle missing cookies
+
+        if rft_employee is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing Session"
+            )    
         
         # if not mobile device raise error        
         if not is_mobile(request):
