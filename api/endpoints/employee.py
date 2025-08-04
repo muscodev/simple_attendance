@@ -24,11 +24,11 @@ async def employee_login(
 ):
 
     # if not mobile device raise error        
-    # if not is_mobile(request):
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Invalid Device"
-    #     )
+    if not is_mobile(request):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Device"
+        )
         
 
     data = employee_service.validate_employee_token(token=token)

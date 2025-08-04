@@ -44,13 +44,11 @@ async def get_employee(
     try:
         
         # if not mobile device raise error        
-        # if not is_mobile(request):
-        #     raise HTTPException(
-        #         status_code=status.HTTP_401_UNAUTHORIZED,
-        #         detail="Invalid Device"
-        #     )
-        print(request.headers)
-        print(act_employee,rft_employee)        
+        if not is_mobile(request):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Device"
+            )      
         device = device_hash(request)
 
         token = await employee_service.validate_employee_session(db, act_employee, rft_employee, device)
@@ -73,7 +71,8 @@ async def get_employee(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="account is deactive or missing"
             )     
-        return employee       
+        return employee
+           
 
     except Exception as e:
         raise
