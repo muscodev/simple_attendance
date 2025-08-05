@@ -8,8 +8,8 @@ logging.basicConfig(level=logging.INFO)
 
 class Settings(BaseSettings):
     db_url: str
-    username: str
-    password: str
+    owner_username: str
+    owner_password: str
     secret_key: str
     owner_access_token_expiry_minute: int = 15
     admin_access_token_expiry_minute: int = 60
