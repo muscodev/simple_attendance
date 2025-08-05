@@ -12,6 +12,7 @@ app.include_router(employee.router, prefix='/api')
 app.include_router(owner.router, prefix='/api', dependencies=[Depends(validate_owner)])
 app.include_router(owner.router_no_auth, prefix='/api')
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origin.split(','),
