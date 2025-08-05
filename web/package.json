@@ -23,5 +23,8 @@
     "tailwindcss": "^3.4.17",
     "vite": "^7.0.4",
     "vite-plugin-pwa": "^1.0.1"
-  }
+  },
+  "engines": {
+    "node": ">=22.17.1" 
+  }  
 }
