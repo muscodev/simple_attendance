@@ -25,7 +25,7 @@ router = APIRouter(tags=['Owner'])
 @router_no_auth.post('/owner/login')
 async def owner_login(request: Request, credential: LoginPost, response: Response):
 
-    if settings.username != credential.username or settings.password != credential.password:
+    if settings.owner_username != credential.username or settings.owner_password != credential.password:
         raise HTTPException(status_code=400, detail="Invalid credentials")
     payload = create_agent_hash(request)
     token = create_owner_access_token(payload, settings.owner_access_token_expiry_minute*60)
