@@ -97,11 +97,15 @@ class EmployeeRepo(CRUDBase[Employee, EmployeeCreate, EmployeeUpdate]):
             select(
                 Attendance.employee_id,
                 Attendance.status,
-                func.max(Attendance.timestamp).label("latest_time")
+                Attendance.timestamp.label("latest_time"),
+                func.row_number()
+                .over(
+                    partition_by=Attendance.employee_id,
+                    order_by=Attendance.timestamp.desc()
+                ).label("rownum")
             )
             .where(func.date(Attendance.timestamp) == today)
             .where(Attendance.tenant_id == tenant_id)
-            .group_by(Attendance.employee_id)
             .subquery()
         )
 
@@ -118,7 +122,13 @@ class EmployeeRepo(CRUDBase[Employee, EmployeeCreate, EmployeeUpdate]):
                 attendance_subquery.c.status.label("latest_status"),
                 token_subquery.c.token_type
             )
-            .join(attendance_subquery, attendance_subquery.c.employee_id == Employee.id, isouter=True)
+            .join(attendance_subquery,
+                and_(
+                    attendance_subquery.c.employee_id == Employee.id ,
+                    attendance_subquery.c.rownum == 1
+                ),
+                isouter=True
+            )
             .join(token_subquery, token_subquery.c.employee_id == Employee.id, isouter=True)
             .where(Employee.tenant_id == tenant_id)
         )
