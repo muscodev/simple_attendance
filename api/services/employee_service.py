@@ -53,7 +53,7 @@ class EmployeeService:
             purpose="login",
         )
         return create_token(
-            payload.model_dump(), expire_second=60
+            payload.model_dump(), expire_second=settings.emplployee_login_token_expiry_minute*60
         )  # 1 minute
 
     # 2. Validate the token and return employee_id
@@ -68,7 +68,7 @@ class EmployeeService:
     # 3. Create access token (for full login or long session)
     async def create_access_token(self, tenant: uuid.UUID, employee_id: uuid.UUID) -> str:
         payload = {"employee_id": str(employee_id), "tenant_id": str(tenant), "level_": Levels.EMPLOYEE.value, "purpose": "auth"}
-        return create_token(payload, expire_second=60)  # 24 hrs
+        return create_token(payload, expire_second=settings.employee_access_token_expiry_minute*60)  # 24 hrs
 
     async def create_refresh_token(self, tenant: uuid.UUID, employee_id: uuid.UUID) -> str:
         payload = {"employee_id": str(employee_id), "tenant_id": str(tenant),"level_": Levels.EMPLOYEE.value, "purpose": "auth_refresh"}

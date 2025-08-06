@@ -5,6 +5,7 @@ from ..schema.general import Coordinate
 from api.services.cruds.tenant  import geomarking_repo, AttendanceCreate
 from api.models import Employee
 from api.services.employee_service import employee_service
+from api.sa.settings import settings
 from api.sa.db import AsyncSession, get_session
 from api.sa.depend import get_employee
 from api.sa.utils import device_hash, is_mobile
@@ -29,7 +30,6 @@ async def employee_login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Device"
         )
-        
 
     data = employee_service.validate_employee_token(token=token)
     # create refreshtoken and access token
@@ -45,8 +45,21 @@ async def employee_login(
             device_hash(request=request),
             db
         )
-        response.set_cookie("act_employee", access, httponly=True, max_age=3600 * 24)
-        response.set_cookie("rft_employee", refresh, httponly=True, max_age=3600 * 24)        
+        response.set_cookie(
+            "act_employee", access, httponly=True,
+            max_age=settings.employee_access_token_expiry_minute,
+            path=settings.COOKIE_PATH,
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE
+        )
+        response.set_cookie(
+            "rft_employee",
+            refresh,
+            httponly=True,
+            path=settings.COOKIE_PATH,
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESIT
+        )        
         return {'refresh': refresh, 'access': access}
     
     except IntegrityError:

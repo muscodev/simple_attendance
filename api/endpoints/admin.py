@@ -41,7 +41,15 @@ async def admin_login(
         raise HTTPException(status_code=400, detail="invalid credentials")
     payload = {'id': admin.id, 'tenant_id': admin.tenant_id}
     token = create_admin_access_token(request, payload, settings.admin_access_token_expiry_minute*60)
-    response.set_cookie("access_token_admin", token, httponly=True, max_age=3600 * 24)
+    response.set_cookie(
+        "access_token_admin", 
+        token, 
+        httponly=True,
+        max_age=settings.admin_access_token_expiry_minute,
+        path=settings.COOKIE_PATH,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE
+        )
     return {"access_token": token}
 
 
@@ -49,6 +57,7 @@ async def admin_login(
 def logout(response: Response):
     response.delete_cookie("access_token_admin")  # or your cookie name
     return {"message": "Logged out"}
+
 
 @router.get('/admin/me')
 async def get_me(admin=Depends(get_admin)):
@@ -115,7 +124,6 @@ async def clear_employee_seesion_in_db(
     try:
 
         cleared = await employee_service.clear_session(admin.tenant_id, id, db)
-        print(cleared)
         if cleared:
             return "OK"
     except Exception as e:

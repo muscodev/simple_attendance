@@ -1,4 +1,5 @@
 
+from typing import Optional
 from pydantic_settings import BaseSettings
 import logging
 
@@ -11,10 +12,17 @@ class Settings(BaseSettings):
     owner_username: str
     owner_password: str
     secret_key: str
-    owner_access_token_expiry_minute: int = 15
-    admin_access_token_expiry_minute: int = 60
-    allowed_origin: str
-    production: bool = False
+    owner_access_token_expiry_minute: Optional[int] = 15
+    admin_access_token_expiry_minute: Optional[int] = 60
+    emplployee_login_token_expiry_minute: Optional[int] = 5
+    employee_access_token_expiry_minute: Optional[int] = 5
+    allowed_origin: Optional[str] = '*'
+    production: Optional[bool] = False
+
+    COOKIE_PATH: Optional[str] = "/"
+    COOKIE_SAMESITE: Optional[str] = "lax"  # options: lax, strict, none for cross site
+    COOKIE_DOMAIN: Optional[str] = None
+    COOKIE_SECURE: Optional[bool] = False
 
     class Config:
         env_file = ".env"
