@@ -58,7 +58,7 @@ async def employee_login(
             httponly=True,
             path=settings.COOKIE_PATH,
             secure=settings.COOKIE_SECURE,
-            samesite=settings.COOKIE_SAMESIT
+            samesite=settings.COOKIE_SAMESITE
         )        
         return {'refresh': refresh, 'access': access}
     
