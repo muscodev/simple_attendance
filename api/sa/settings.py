@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     owner_access_token_expiry_minute: int = 15
     admin_access_token_expiry_minute: int = 60
     allowed_origin: str
+    production: bool = False
 
     class Config:
         env_file = ".env"
