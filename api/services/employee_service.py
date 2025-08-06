@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 import uuid
 import logging
 import time
+from datetime import  datetime, timedelta, timezone
 from api.services.cruds.tenant import (
     employee_repo, EmployeeRepo,attendance_repo, AttendanceRepo, Attendance,  
     TokenRepo, token_repo, TokenCreate, Token,AttendanceCreate, Employee, GeoMarking,
@@ -213,7 +214,7 @@ class EmployeeService:
             token_type='access_token_employee',
             token_hash=access,
             device_hash=device_hash,
-            expires_at=time.time() + 5*60
+            expires_at=datetime.now() + timedelta(minutes=settings.employee_access_token_expiry_minute)
         )
         return await token_repo.create(db, new_token)
 
@@ -232,7 +233,7 @@ class EmployeeService:
             token_type='refresh_token_employee',
             token_hash=refresh,
             device_hash=device_hash,
-            expires_at=time.time() + 60
+            expires_at=datetime.now() + timedelta(days=365)
         )
         return await token_repo.create(db, new_token)
 
