@@ -45,7 +45,7 @@ async def admin_login(
         "access_token_admin", 
         token, 
         httponly=True,
-        max_age=settings.admin_access_token_expiry_minute,
+        max_age=settings.admin_access_token_expiry_minute*60,
         path=settings.COOKIE_PATH,
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE

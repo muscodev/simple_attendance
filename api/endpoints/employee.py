@@ -47,7 +47,7 @@ async def employee_login(
         )
         response.set_cookie(
             "act_employee", access, httponly=True,
-            max_age=settings.employee_access_token_expiry_minute,
+            max_age=settings.employee_access_token_expiry_minute*60,
             path=settings.COOKIE_PATH,
             secure=settings.COOKIE_SECURE,
             samesite=settings.COOKIE_SAMESITE

@@ -82,7 +82,7 @@ async def owner_login_post(request: Request, response: Response, username: str =
         raise HTTPException(status_code=400, detail="Invalid credentials")
     payload = create_agent_hash(request)
     token = create_owner_access_token(payload, settings.owner_access_token_expiry_minute*60)
-    response.set_cookie("access_token", token, httponly=True, max_age=3600 * 24)
+    response.set_cookie("access_token", token, httponly=True, max_age=settings.owner_access_token_expiry_minute*60)
     return {"access_token": token}
 
 
