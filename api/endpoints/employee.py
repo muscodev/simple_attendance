@@ -56,6 +56,7 @@ async def employee_login(
             "rft_employee",
             refresh,
             httponly=True,
+            max_age=365*24*60*60,
             path=settings.COOKIE_PATH,
             secure=settings.COOKIE_SECURE,
             samesite=settings.COOKIE_SAMESITE
