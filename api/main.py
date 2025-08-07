@@ -44,9 +44,7 @@ app.include_router(owner.router_no_auth, prefix='/api')
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origin.split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=settings.allow_methods.split(','),
+    allow_headers=settings.allow_headers.split(','),
     allow_credentials=True,
 )
-
-
