@@ -2,8 +2,8 @@ from dataclasses import dataclass, field
 from typing import Optional, Tuple
 import uuid
 import logging
-import time
-from datetime import  datetime, timedelta, timezone
+from sqlalchemy import func,select
+from datetime import  datetime, timedelta, timezone, date
 from api.services.cruds.tenant import (
     employee_repo, EmployeeRepo,attendance_repo, AttendanceRepo, Attendance,  
     TokenRepo, token_repo, TokenCreate, Token,AttendanceCreate, Employee, GeoMarking,
@@ -393,6 +393,29 @@ class EmployeeService:
             'today_in_near': today_in_near.model_dump() if today_in_near else None,
             'today_in': today_in.model_dump() if today_in else {}
         }
+
+    async def get_attendance_by_date(self, tenant_id: uuid.UUID, employee_id: uuid.UUID,target_date: date, db: AsyncSession):
+        query = (
+            select(Attendance, Employee, GeoMarking)
+            .join(Employee, Attendance.employee_id == Employee.id)
+            .join(GeoMarking, Attendance.geo_marking_id == GeoMarking.id)
+            .where(Attendance.tenant_id == tenant_id)
+            .where(Attendance.employee_id == employee_id)
+            .where(func.date(Attendance.timestamp) == target_date)
+            .order_by(Attendance.timestamp.desc())
+        )
+        result = (await db.execute(query)).all()
+        merged = []
+        for a, e, g in result:
+            merged.append({
+                **a.dict(),
+                **{f"employee_{k}": v for k, v in e.dict().items()},
+                **{f"geomarking_{k}": v for k, v in g.dict().items()},
+            })
+
+        return merged
+
+
 
 
 employee_service = EmployeeService()

@@ -223,6 +223,23 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
             )
         )
 
+    async def get_by_date(
+        self,
+        db: AsyncSession,
+        tenant_id: uuid.UUID,
+        employee_id: uuid.UUID,
+        target_date: date
+    ) :
+        return await self._get_all(
+            db,
+            select(Attendance, Employee, GeoMarking)
+            .join(Employee, Attendance.employee_id == Employee.id)
+            .join(GeoMarking, Attendance.geo_marking_id == GeoMarking.id)
+            .where(Attendance.tenant_id == tenant_id)
+            .where(Attendance.employee_id == employee_id)
+            .where(func.date(Attendance.timestamp) == target_date)
+        )
+        
     async def last_mark_today(
         self,
         db: AsyncSession,

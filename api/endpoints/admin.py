@@ -1,5 +1,5 @@
 from fastapi import (
-    APIRouter,HTTPException,
+    APIRouter,HTTPException,Query,
     Request, Response, Depends,status
     )
 import logging
@@ -18,8 +18,8 @@ from ..services.cruds.tenant import (
     GeoMarking, GeoMarkingCreate, GeoMarkingUpdate, geomarking_repo
     )
 from api.services.employee_service import employee_service
-from api.models import EmployeeCreateSchema
-
+from api.models import EmployeeCreateSchema, GeoMarkingCreateschema
+from datetime import datetime, date
 
 logger = logging.getLogger()
 router = APIRouter(tags=['Admin'])
@@ -132,11 +132,24 @@ async def clear_employee_seesion_in_db(
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "token not cleared")
 
 
+@router.get('/admin/tenant/employee/{id}/attendance/')
+async def activate_tenant_employee(id: uuid.UUID, target_date: date = Query(description='yyyy-mm-dd formate'), admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
+
+    data = await employee_service.get_attendance_by_date(admin.tenant_id, id, target_date, db)
+    return data
+
+print(date.today())
+
 # Geomarking service
-@router.post('/admin/tenants/geomarking')
-async def create_tenant_geomarking(geolocation: GeoMarkingCreate, admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
-    geolocation.tenant_id = admin.tenant_id
-    return await geomarking_repo.create(db, geolocation)
+@router.post('/admin/tenant/geomarking')
+async def create_tenant_geomarking(geolocation: GeoMarkingCreateschema, admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
+    geolocation_create = GeoMarkingCreate.model_validate(
+        {
+         **geolocation.model_dump(),
+         'tenant_id': admin.tenant_id
+         }
+    )    
+    return await geomarking_repo.create(db, geolocation_create)
 
 
 @router.get('/admin/tenant/geomarking/{id}')
@@ -151,3 +164,7 @@ async def get_tenant_geomarkings(admin: User = Depends(get_admin), db: AsyncSess
 @router.put('/admin/tenant/geomarking/{id}')
 async def update_tenant_geomarking(id: uuid.UUID, update_location: GeoMarkingUpdate, admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
     return await geomarking_repo.update(db, id, update_location)
+
+
+
+

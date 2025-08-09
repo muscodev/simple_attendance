@@ -137,12 +137,18 @@ class GeoMarkingBase(SQLModel):
     longitude: Optional[float] = None
     radius_meters: Optional[float] = 2000
 
+
 # ✅ Create model (all fields required except radius_meters)
 class GeoMarkingCreate(GeoMarkingBase):
     tenant_id: uuid.UUID
     name: str
     latitude: float
     longitude: float
+    active: bool = Field(default=True)
+
+
+class GeoMarkingCreateschema(GeoMarkingBase):
+    pass
 
 # ✅ Read model
 class GeoMarkingRead(GeoMarkingBase):
