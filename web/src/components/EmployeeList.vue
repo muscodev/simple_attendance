@@ -1,6 +1,34 @@
 <template>
-  <n-card title="Employees" class="p-4">
-    <n-data-table :columns="columns" :data="employees" striped />
+  <n-card title="Employees" class="p-4 table-wrapper">
+    
+    
+    <n-data-table v-if="!isMobile" :columns="columns" :data="employees" size="small" striped />
+
+    <div v-else>
+      <n-card v-for="employee in employees" class="employee-card" :bordered="true">
+        <template #header>
+          <div class="header-row">
+            <n-tag type="error" size="small">
+              <span v-if="employee.last_marked_today === 'OUT'" class="text-red-600">🔴</span>
+              <span v-if="employee.last_marked_today === 'IN'" class="text-green-600">🟢</span>
+              {{employee.name}}
+            </n-tag>
+            <n-space align="center">
+              <n-icon size="18" v-if="employee.device_locked" @click="clearSessionOpenModal(employee)">🔒</n-icon>
+              <n-icon  v-else size="18" @click=shareLinkOpenModal(employee)>🔓</n-icon>
+            </n-space>
+
+          </div>
+        </template>
+          <n-space>
+            <span>{{employee.employee_no}}</span>
+            <span>{{employee.email}}</span>
+            <span>{{employee.phone}}</span>
+            
+          </n-space>
+      </n-card>
+    </div>
+
 
 
     <n-modal v-model:show="clearSessionshowModal" preset="dialog" title="Clear Session of Employee"
@@ -22,9 +50,20 @@
   </n-card>
 </template>
 
+<style>
+.employee-card {
+  margin: 8px;
+  border-radius: 12px;
+}
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>
 <script setup>
-import { h, ref,defineEmits } from 'vue'
-import { NCard, NDataTable,NModal, NButton, NInput, useMessage } from 'naive-ui'
+import { h, ref,defineEmits, onMounted,onBeforeUnmount } from 'vue'
+import { NSpace,NCard, NDataTable,NModal, NButton, NInput, useMessage } from 'naive-ui'
 import { clear_employee_session, create_login_link } from '../services/adminService'
 
 
@@ -38,6 +77,16 @@ const clearSessionshowModal = ref(false)
 const shareLinkshowModal = ref(false)
 const selectedEmployee = ref(null)
 const loginLink = ref(null)
+
+
+const isMobile = ref(window.innerWidth < 768)
+const handleResize = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+onMounted(() => window.addEventListener('resize', handleResize))
+onBeforeUnmount(() => window.removeEventListener('resize', handleResize))
+
 
 
 function CloseCreateLink(){
