@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AdminLogin from '../views/Admin/AdminLogin.vue'
 import EmployeePage from '../views/Admin/EmployeePage.vue'
 import EmployeeMobile from '../views/Employee/EmployeeMobile.vue'
+import GeoMarkingList from '../components/GeoMarkingList.vue'
 import { getDeviceType  } from '../utlis/device.js'
 import NotAllowed from '../components/NotAllowed.vue'
 import OwnerLoginPage from '../views/Owner/LoginPage.vue'
@@ -21,10 +22,10 @@ let routes = [
     path: '/admin',
     component: AdminLayout,
     children: [
-      // {
-      //   path: '/',         
-      //   component: Dashboard,
-      // },
+      {
+        path: 'geomarking',         
+        component: GeoMarkingList,
+      },
       {
         path: 'employees',      
         component: EmployeePage,
