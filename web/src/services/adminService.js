@@ -80,3 +80,13 @@ export async function create_login_link(emp_id){
 
     return api.post(`/api/admin/tenant/employees/${emp_id}/idtoken`)    
 }
+
+export async function get_geomarking(){
+
+    return api.get('/api/admin/tenant/geomarking')    
+}
+
+export async function create_geomarking(data){
+
+    return api.post('/api/admin/tenant/geomarking',data)    
+}
