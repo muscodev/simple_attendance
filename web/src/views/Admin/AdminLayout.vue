@@ -1,53 +1,52 @@
 
 <template>
   <div class="min-h-screen flex flex-col">
-    <!-- Top Navigation Bar -->
-    <n-layout-header class="bg-white shadow px-4 py-2 flex justify-between items-center">
-      <div class="text-lg font-bold">Admin Panel</div>
-      <div >
-        <div class="text-sm font-bold">Hi,{{ me?.email?.split('@')[0] }}</div>
-         <n-button size="small" @click="handleLogout">Logout</n-button>
-      </div>
-     
-    </n-layout-header>
+  <n-page-header class="bg-white shadow px-4 py-2 flex justify-between items-center">
+    <template #title>
+      SA ADMIN
+      <n-button text @click="showDrawer = true">🗄</n-button>
+    </template>
+  
+    <div class="text-sm font-bold">Hi,{{ me?.email?.split('@')[0] }}</div>
 
-    <n-layout has-sider class="flex-1">
-      <!-- Sidebar Navigation -->
-      <n-layout-sider width="200" class="bg-gray-50 border-r">
-        <n-menu
-          :options="menuOptions"
-          :value="activeKey"
-          @update:value="handleMenuClick"
-        />
-      </n-layout-sider>
+  </n-page-header>
+  <n-drawer v-model:show="showDrawer" placement="left" width="200">
+    <n-menu :options="menuOptions"    @update:value="handleMenuClick" />
+    <span size="small" class="ms-3" @click="handleLogout">Logout</span>
+  </n-drawer>      
 
-      <!-- Main Content Area -->
-      <n-layout-content class="p-4 bg-gray-100">
 <NMessageProvider>
         <router-view />
 </NMessageProvider>
-
-        
-      </n-layout-content>
-    </n-layout>
   </div>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { logout, get_me } from '../../services/adminService.js';
-import { NLayoutSider, NLayoutContent, NLayoutHeader, NLayout,NMenu, NButton, NMessageProvider } from 'naive-ui'
+
+import { NDrawer, NPageHeader, NLayoutSider, NLayoutContent, NLayoutHeader,NLayout,NMenu, NButton, NMessageProvider } from 'naive-ui'
 
 const router = useRouter()
 const route = useRoute()
 const me = ref();
+const showDrawer = ref(false)
 
 const menuOptions = [
   {
     label: 'Employees',
     key: '/admin/employees',
   },
+  {
+    label: 'GeoMarking',
+    key: '/admin/geomarking',
+  },
+  {
+    label: 'Attendance',
+    key: '/admin/employees/attendance',
+  },    
 ]
 
 const activeKey = computed(() => route.path)
