@@ -10,6 +10,7 @@ import OwnerLoginPage from '../views/Owner/LoginPage.vue'
 import OwnerDashBoard from '../views/Owner/DashBoard.vue'
 import AdminLayout from '../views/Admin/AdminLayout.vue'
 import EmpLoginPage from '../views/Employee/LoginPage.vue'
+import EmployeeAttendance from '../components/EmployeeAttendance.vue'
 
 let device = getDeviceType();
 console.log(device);
@@ -30,6 +31,10 @@ let routes = [
         path: 'employees',      
         component: EmployeePage,
       },
+      {
+        path: 'attendance',      
+        component: EmployeeAttendance,
+      },      
 
     ],
   },

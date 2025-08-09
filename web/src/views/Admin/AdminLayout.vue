@@ -45,7 +45,7 @@ const menuOptions = [
   },
   {
     label: 'Attendance',
-    key: '/admin/employees/attendance',
+    key: '/admin/attendance',
   },    
 ]
 
