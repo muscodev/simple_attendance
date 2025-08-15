@@ -97,10 +97,12 @@ const downloadCsv = () => {
 const exportTocsv = (data, filename)=>{
   if(!data.length) return;
   const header = Object.keys(data[0]).join(',');
-  const csvRows = data.map(row =>{
-    Object.values(row).map(val => `"${String(val).replace(/"/g,'""')}""`).join(',');
-  });
+  const csvRows = data.map(row =>
+    Object.values(row).map(val => `"${String(val).replace(/"/g,'""')}"`).join(',')
+  );
+  console.log(csvRows);
   const csvContent = [header, ...csvRows].join('\n');
+  console.log(csvContent);  
   const blob = new Blob([csvContent],{type: "text/csv;charset=utf-8;"});
   downloadBlob(blob,filename);
 }
