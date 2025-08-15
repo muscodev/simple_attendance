@@ -2,12 +2,13 @@ from dataclasses import dataclass, field
 from typing import Optional, Tuple
 import uuid
 import logging
-from sqlalchemy import func,select
-from datetime import  datetime, timedelta, timezone, date
+import zoneinfo
+from sqlalchemy import select
+from datetime import datetime, timedelta, timezone, date
 from api.services.cruds.tenant import (
-    employee_repo, EmployeeRepo,attendance_repo, AttendanceRepo, Attendance,  
-    TokenRepo, token_repo, TokenCreate, Token,AttendanceCreate, Employee, GeoMarking,
-    geomarking_repo, 
+    employee_repo, EmployeeRepo, attendance_repo, AttendanceRepo, Attendance,
+    TokenRepo, token_repo, TokenCreate, Token, AttendanceCreate, Employee, GeoMarking,
+    geomarking_repo
     )
 from api.sa.utils import (
     create_token, validate_token,
@@ -37,7 +38,7 @@ class EmployeeService:
     employee_repo: EmployeeRepo = field(default=employee_repo, init=False, repr=False)
     token_repo: TokenRepo = field(default=token_repo, init=False, repr=False)
     attendance_repo: AttendanceRepo = field(default=attendance_repo, init=False, repr=False)
-    
+
     # 1. Create a login or attendance token (short-lived)
     async def create_employee_token(
             self,
@@ -59,11 +60,11 @@ class EmployeeService:
 
     # 2. Validate the token and return employee_id
     def validate_employee_token(self, token: str) -> JwtToken | None:
-        
+
         data = validate_token(token)
         if not data:
             return None
-   
+
         return JwtToken(**data)
 
     # 3. Create access token (for full login or long session)
@@ -166,7 +167,7 @@ class EmployeeService:
 
     async def get_tokens(
         self,
-        tenant: uuid.UUID, 
+        tenant: uuid.UUID,
         employee_id: uuid.UUID,
         device_hash: str,
         db: AsyncSession
@@ -326,7 +327,7 @@ class EmployeeService:
         obj_in = AttendanceCreate(
             tenant_id=employee.tenant_id,
             employee_id=employee.id,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(tz=timezone.utc),
             latitude=coordinates.lat,
             longitude=coordinates.lon,
             geo_marking_id=nearest.id if nearest else None,
@@ -337,12 +338,12 @@ class EmployeeService:
             db,
             employee.tenant_id,
             employee.id
-
         )
         if last_mark and last_mark.status == 'IN':
             return None, None
         # mark attendance in to table
-        return await self.attendance_repo.create(db, obj_in), nearest
+        att = Attendance.model_validate(await self.attendance_repo.create(db, obj_in))
+        return att, nearest
 
     # 7. Mark attendance "out"
     async def mark_attendance_out(
@@ -364,7 +365,7 @@ class EmployeeService:
         obj_in = AttendanceCreate(
             tenant_id=employee.tenant_id,
             employee_id=employee.id,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(tz=timezone.utc),
             latitude=coordinates.lat,
             longitude=coordinates.lon,
             geo_marking_id=nearest.id,
@@ -381,41 +382,54 @@ class EmployeeService:
         if not last_mark or (last_mark and last_mark.status == 'OUT'):
             return None, None
         # mark attendance in to table
-        return await self.attendance_repo.create(db, obj_in), nearest
+        att = Attendance.model_validate(await self.attendance_repo.create(db, obj_in))
+        return att, nearest
 
 
     async def get_state(self, tenant_id: uuid.UUID, employee_id: uuid.UUID, db: AsyncSession):
+        
         state_near, state = await self.attendance_repo.last_mark_today(db, tenant_id, employee_id)
         today_in_near, today_in = await self.attendance_repo.today_in(db, tenant_id, employee_id)
         return {
-            'state': state.model_dump() if state else {},
+            'state': Attendance.model_validate(state).model_dump() if state else {},
             'state_near': state_near.model_dump() if state_near else None,
             'today_in_near': today_in_near.model_dump() if today_in_near else None,
-            'today_in': today_in.model_dump() if today_in else {}
+            'today_in': Attendance.model_validate(today_in) if today_in else {}
         }
 
-    async def get_attendance_by_date(self, tenant_id: uuid.UUID, employee_id: uuid.UUID,target_date: date, db: AsyncSession):
+    async def get_attendance_by_date(
+        self,
+        tenant_id: uuid.UUID,
+        employee_id: uuid.UUID,
+        start_date: date,
+        end_date: date,
+        db: AsyncSession
+    ):
+        client_tz = zoneinfo.ZoneInfo(settings.timezone)
+        start_of_start_date = datetime.combine(start_date, datetime.min.time(),tzinfo=client_tz)
+        end_of_end_date = datetime.combine(end_date, datetime.max.time(),tzinfo=client_tz)
+        print(start_of_start_date,end_of_end_date)
         query = (
             select(Attendance, Employee, GeoMarking)
             .join(Employee, Attendance.employee_id == Employee.id)
             .join(GeoMarking, Attendance.geo_marking_id == GeoMarking.id)
             .where(Attendance.tenant_id == tenant_id)
             .where(Attendance.employee_id == employee_id)
-            .where(func.date(Attendance.timestamp) == target_date)
+            .where(Attendance.timestamp >= start_of_start_date.astimezone(timezone.utc))
+            .where(Attendance.timestamp <= end_of_end_date.astimezone(timezone.utc))
             .order_by(Attendance.timestamp.desc())
         )
-        result = (await db.execute(query)).all()
+
+        result = (await db.exec(query)).all()
         merged = []
         for a, e, g in result:
             merged.append({
-                **a.dict(),
+                **Attendance.model_validate(a).model_dump(),
                 **{f"employee_{k}": v for k, v in e.dict().items()},
                 **{f"geomarking_{k}": v for k, v in g.dict().items()},
             })
 
         return merged
-
-
 
 
 employee_service = EmployeeService()

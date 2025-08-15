@@ -133,12 +133,17 @@ async def clear_employee_seesion_in_db(
 
 
 @router.get('/admin/tenant/employee/{id}/attendance/')
-async def activate_tenant_employee(id: uuid.UUID, target_date: date = Query(description='yyyy-mm-dd formate'), admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
+async def activate_tenant_employee(
+    id: uuid.UUID,
+    start_date: date = Query(description='yyyy-mm-dd formate'),
+    end_date: date = Query(description='yyyy-mm-dd formate'),
+    admin: User = Depends(get_admin),
+    db: AsyncSession = Depends(get_session)
+):
 
-    data = await employee_service.get_attendance_by_date(admin.tenant_id, id, target_date, db)
+    data = await employee_service.get_attendance_by_date(admin.tenant_id, id, start_date, end_date, db)
     return data
 
-print(date.today())
 
 # Geomarking service
 @router.post('/admin/tenant/geomarking')
@@ -161,10 +166,7 @@ async def get_tenant_geomarking(id: uuid.UUID, admin: User = Depends(get_admin),
 async def get_tenant_geomarkings(admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
     return await geomarking_repo.get_all_by_tenant(db, admin.tenant_id)
 
+
 @router.put('/admin/tenant/geomarking/{id}')
 async def update_tenant_geomarking(id: uuid.UUID, update_location: GeoMarkingUpdate, admin: User = Depends(get_admin), db: AsyncSession = Depends(get_session)):
     return await geomarking_repo.update(db, id, update_location)
-
-
-
-

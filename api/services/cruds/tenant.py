@@ -1,8 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, desc, text
-from typing import List
+from typing import List, Tuple
 import uuid
-from datetime import date, datetime, timedelta
+import zoneinfo
+from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select, and_
 from ...models import (
     Tenant, TenantCreate, TenantUpdate,
@@ -12,6 +13,7 @@ from ...models import (
     Attendance, AttendanceCreate
     )
 from api.models.token import Token, TokenCreate, TokenUpdate
+from api.sa.settings import settings
 from .base import CRUDBase
 
 
@@ -245,7 +247,7 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
         db: AsyncSession,
         tenant_id: uuid.UUID,
         employee_id: uuid.UUID
-    ):
+    ) -> Tuple[GeoMarking, Attendance]:
 
         today = date.today()  # <class 'datetime.date'>
         start_of_today = datetime.combine(today, datetime.min.time())
@@ -262,8 +264,8 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
         )
         row = await self._getfirst(db, query)
         if row:
-            return row  # (Attendance, GeoMarking)
-        return None, None  # Always return a tuple    
+            return row  # (GeoMarking,Attendance)
+        return None, None  # Always return a tuple
 
     async def today_in(
         self,
@@ -271,23 +273,23 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
         tenant_id: uuid.UUID,
         employee_id: uuid.UUID
     ) -> Attendance:
-
-        today = date.today()  # <class 'datetime.date'>
-        start_of_today = datetime.combine(today, datetime.min.time())
+        client_tz = zoneinfo.ZoneInfo(settings.timezone)
+        today = datetime.now(tz=client_tz).date()# <class 'datetime.date'>
+        start_of_today = datetime.combine(today, datetime.min.time(),tzinfo=client_tz)
         start_of_tomorrow = start_of_today + timedelta(days=1)
         query = (
             select(GeoMarking, Attendance)
             .where(Attendance.tenant_id == tenant_id)
             .where(Attendance.employee_id == employee_id)
             .where(Attendance.status == 'IN')
-            .where(Attendance.timestamp >= start_of_today)
-            .where(Attendance.timestamp < start_of_tomorrow)
+            .where(Attendance.timestamp >= start_of_today.astimezone(timezone.utc))
+            .where(Attendance.timestamp < start_of_tomorrow.astimezone(timezone.utc))
             .order_by(Attendance.timestamp)
             .limit(1)
         )
         row = await self._getfirst(db, query)
         if row:
-            return row  # (Attendance, GeoMarking)
+            return row  # (GeoMarking, Attendance)
         return None, None  # Always return a tuple       
 
 tenant_repo = TenantRepo(Tenant)
