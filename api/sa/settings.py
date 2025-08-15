@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     allow_methods: Optional[str] = "GET,POST,HEAD,OPTIONS"
     allow_headers: Optional[str] = "Authorization,Content-Type"
     production: Optional[bool] = False
+    timezone: Optional[str] = 'Asia/Kolkata' # This will use for default queries which need to understand day/night
 
     COOKIE_PATH: Optional[str] = "/"
     COOKIE_SAMESITE: Optional[str] = "lax"
