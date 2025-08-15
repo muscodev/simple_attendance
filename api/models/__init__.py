@@ -1,9 +1,22 @@
 # models.py
 import uuid
-from datetime import datetime
-from sqlmodel import SQLModel, Field
-from typing import Optional
+from datetime import datetime, timezone
+from sqlmodel import SQLModel, Field, Column, DateTime
+from pydantic import BeforeValidator
+from typing import Optional, Annotated
 from .token import Token
+
+
+def ensure_utc(v: datetime) -> datetime:
+    if isinstance(v, str):
+        v = datetime.fromisoformat(v)
+
+    if v.tzinfo is None:
+        return v.replace(tzinfo=timezone.utc)
+    return v.astimezone(timezone.utc)
+
+
+UTCDatetime = Annotated[datetime, BeforeValidator(ensure_utc)]
 
 
 # Base model (shared fields)
@@ -86,6 +99,7 @@ class EmployeeCreateSchema(SQLModel):
 class EmployeeCreate(EmployeeBase):
     pass
 
+
 class EmployeeUpdate(SQLModel):
     employee_no: Optional[str] = None
     name: Optional[str] = None
@@ -108,12 +122,13 @@ class EmployeeRead(EmployeeBase):
 class AttendanceBase(SQLModel):
     tenant_id: uuid.UUID = Field(foreign_key="tenant.id")
     employee_id: uuid.UUID = Field(foreign_key="employee.id")
-    timestamp: datetime
+    timestamp: UTCDatetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
     latitude: float
     longitude: float
     geo_marking_id: uuid.UUID = Field(foreign_key="geomarking.id")
     distance_from_marking: float
-    status: str = Field(default='IN',max_length=5)
+    status: str = Field(default='IN', max_length=5)
+
 
 # Model for creation
 class AttendanceCreate(AttendanceBase):
@@ -160,11 +175,13 @@ class GeoMarkingRead(GeoMarkingBase):
     radius_meters: float
     created_at: datetime
 
-# ✅ Update model (all fields optional)
+
+#  Update model (all fields optional)
 class GeoMarkingUpdate(GeoMarkingBase):
     pass
 
-# ✅ Main DB model
+
+#  Main DB model
 class GeoMarking(GeoMarkingBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tenant_id: uuid.UUID = Field(foreign_key="tenant.id")
