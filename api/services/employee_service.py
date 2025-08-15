@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 from typing import Optional, Tuple
 import uuid
 import logging
-from sqlalchemy import func, select
+import zoneinfo
+from sqlalchemy import select
 from datetime import datetime, timedelta, timezone, date
 from api.services.cruds.tenant import (
     employee_repo, EmployeeRepo, attendance_repo, AttendanceRepo, Attendance,
@@ -396,14 +397,26 @@ class EmployeeService:
             'today_in': Attendance.model_validate(today_in) if today_in else {}
         }
 
-    async def get_attendance_by_date(self, tenant_id: uuid.UUID, employee_id: uuid.UUID,target_date: date, db: AsyncSession):
+    async def get_attendance_by_date(
+        self,
+        tenant_id: uuid.UUID,
+        employee_id: uuid.UUID,
+        start_date: date,
+        end_date: date,
+        db: AsyncSession
+    ):
+        client_tz = zoneinfo.ZoneInfo(settings.timezone)
+        start_of_start_date = datetime.combine(start_date, datetime.min.time(),tzinfo=client_tz)
+        end_of_end_date = datetime.combine(end_date, datetime.max.time(),tzinfo=client_tz)
+        print(start_of_start_date,end_of_end_date)
         query = (
             select(Attendance, Employee, GeoMarking)
             .join(Employee, Attendance.employee_id == Employee.id)
             .join(GeoMarking, Attendance.geo_marking_id == GeoMarking.id)
             .where(Attendance.tenant_id == tenant_id)
             .where(Attendance.employee_id == employee_id)
-            .where(func.date(Attendance.timestamp) == target_date)
+            .where(Attendance.timestamp >= start_of_start_date.astimezone(timezone.utc))
+            .where(Attendance.timestamp <= end_of_end_date.astimezone(timezone.utc))
             .order_by(Attendance.timestamp.desc())
         )
 
