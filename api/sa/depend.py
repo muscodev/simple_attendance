@@ -46,6 +46,7 @@ async def get_employee(
         # handle missing cookies
 
         if rft_employee is None:
+            logger.error('refresh token is missing')            
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Missing Session"
@@ -53,6 +54,7 @@ async def get_employee(
         
         # if not mobile device raise error        
         if not is_mobile(request):
+            logger.error('invalid mobile device')              
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid Device"
@@ -61,6 +63,7 @@ async def get_employee(
 
         token = await employee_service.validate_employee_session(db, act_employee, rft_employee, device)
         if token is None:
+            logger.error('session validation error')  
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid session"
@@ -70,7 +73,7 @@ async def get_employee(
 
         employee = await employee_service.employee_repo.get(
             db,
-            token.tenant_id, 
+            token.tenant_id,
             token.employee_id
         )
 
@@ -83,9 +86,9 @@ async def get_employee(
            
 
     except Exception as e:
-        raise
-        # logger.error(str(e),stack_info=True)
-        # raise HTTPException(
-        #         status_code=status.HTTP_401_UNAUTHORIZED,
-        #         detail="Not authenticated (some auth issue))"
-        #     )
+        # raise
+        logger.error(str(e), stack_info=True)
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated (some auth issue))"
+            )
