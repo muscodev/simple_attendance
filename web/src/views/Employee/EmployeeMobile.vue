@@ -1,9 +1,8 @@
 
 
 <template>
-  <NConfigProvider class="min-h-screen flex flex-col items-center py-5 bg-gray-100">
+  <div class="min-h-screen flex flex-col items-center py-5 bg-gray-100">
 
-    <NMessageProvider>
       <n-page-header class="w-full bg-blue-600 shadow px-4 py-2 flex justify-between items-center">
         <template #title>
           🧑 SA
@@ -20,14 +19,14 @@
       </n-tabs>
       </div>
 
-    </NMessageProvider>
 
-  </NConfigProvider>
+
+  </div>
 
 </template>
 
 <script setup>
-import {NPageHeader, NConfigProvider, NMessageProvider, NTabs, NTabPane} from 'naive-ui';
+import {NPageHeader,  NMessageProvider, NTabs, NTabPane, useMessage} from 'naive-ui';
 import AttendanceTracker from '../../components/AttendanceTracker.vue';
 import { onMounted, ref } from 'vue';
 import { getme } from '../../services/employeeService'
@@ -35,13 +34,18 @@ import { getme } from '../../services/employeeService'
 const employee = ref();
 const activeTab = ref('home')
 
-async function  updateMe(){
+const message = useMessage();
+
+const updateMe = async ()=>{
   try{
     let response =  await getme();
     employee.value = response.data;
 
   }catch(error){
-    console.error("ss")
+    if(error.response.status == 401){
+      message.error(error.response.data.detail);
+
+    }
   }
 }
 
