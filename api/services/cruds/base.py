@@ -3,7 +3,7 @@ import uuid
 from typing import TypeVar, Generic, Type, Optional, List
 from sqlmodel import SQLModel, select
 from sqlalchemy.sql import Select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 ModelType = TypeVar("ModelType", bound=SQLModel)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=SQLModel)
@@ -29,8 +29,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, updateSchemaType]):
         query: Optional[Select] = None
     ) -> Optional[ModelType]:
         query = query if query is not None else select(self.model)
-        result = await db.execute(query)
-        return result.first()
+        result = (await db.exec(query)).first()
+        return result
     
     async def get(
         self,

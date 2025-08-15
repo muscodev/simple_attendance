@@ -1,15 +1,12 @@
 from fastapi import APIRouter, HTTPException, Response, Depends, Request, status
-from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from ..schema.general import Coordinate
-from api.services.cruds.tenant  import geomarking_repo, AttendanceCreate
 from api.models import Employee
 from api.services.employee_service import employee_service
 from api.sa.settings import settings
 from api.sa.db import AsyncSession, get_session
 from api.sa.depend import get_employee
 from api.sa.utils import device_hash, is_mobile
-from ..utlis import geo
 import logging
 
 router = APIRouter(tags=["Employee"])
@@ -92,17 +89,11 @@ async def mark_in(
         coordinates,
         db
     )
-
     if attenadance is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="invalid option")
     response = attenadance.model_dump()
     response.update({"place": near_geo_mark.name})
     return response
-    # return {
-    #     "time": datetime.now().isoformat(),
-    #     "state": "IN",
-    #     "nearest": {"place": nearest.model_dump(), "dist": dist},
-    # }
 
 
 @router.post("/employee/markout")
@@ -126,6 +117,7 @@ async def mark_out(
     response = attenadance.model_dump()
     response.update({"place": near_geo_mark.name})
     return response
+
 
 @router.get("/employee/nears")
 async def get_near_locations():
