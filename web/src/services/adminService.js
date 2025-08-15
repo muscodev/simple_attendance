@@ -1,6 +1,6 @@
 
 import axios from 'axios';
-
+import { formatAsLocalYYYYMMDD } from '../utlis/general.js'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL, // dynamic from .env
   withCredentials: true, // if using cookies for auth
@@ -92,15 +92,11 @@ export async function create_geomarking(data){
 }
 
 
-export async function get_attendance_by_date(empid,target_date){
-    let t_date ;
-    if(target_date == null){
-        t_date = new Date();
-    }
-    else{
-        t_date = new Date(target_date);
-    }
-    t_date.setMinutes(t_date.getMinutes() - t_date.getTimezoneOffset());
-    let date = t_date.toISOString().split('T')[0];
-    return api.get(`/api/admin/tenant/employee/${empid}/attendance/?target_date=${date}`)    
+
+export async function get_attendance_by_date(empid,startDate,endDate){
+    let start_Date = formatAsLocalYYYYMMDD(startDate);
+    let end_Date = formatAsLocalYYYYMMDD(endDate);
+    return api.get(
+        `/api/admin/tenant/employee/${empid}/attendance/?start_date=${(start_Date)}&end_date=${end_Date}`
+    )    
 }
