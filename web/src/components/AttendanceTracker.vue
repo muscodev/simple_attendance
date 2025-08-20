@@ -30,7 +30,7 @@
     </div>
 
     <!-- IN/OUT Buttons -->
-    <div class="text-center">
+    <div class="text-center" v-if="locationError == null">
       <button v-if="me?.state?.status!='IN'"
         class="px-6 py-2 rounded font-semibold text-white bg-green-500" @click="markIn">
         IN
@@ -118,7 +118,8 @@ const getUserLocation = () => {
             latitude.value = null;
             longitude.value = null;              
             locationError.value = error.message;
-            message.error(error.message);
+            message.error(`${error.message}`);
+            message.warning(`plese enable location access`);
             console.error('Error getting location:', error.message);
             
           }
@@ -148,26 +149,7 @@ async function markIn() {
     let response = await empMarkIn(coordinate);
     message.success("Markin Success");
     emits('update');
-    // on success response update 
-    // if (employee.state == 'None' && !employee.todayIn.time){
-    //   employee.todayIn.time = new Date(response.data.time);
-    //   employee.todayIn.location.lat = latitude.value;
-    //   employee.todayIn.location.lon = longitude.value;
-    //   employee.todayIn.locationDetails = response.data.nearest;
-    // }
-    // employee.state =  response.data.state
-    // employee.time = new Date(response.data.time);
-    // employee.location.lat = latitude.value;
-    // employee.location.lon = longitude.value;
-    
 
-    // employee.todayOut.time = null;
-    // employee.todayOut.location.lat = null;
-    // employee.todayOut.location.lon = null;      
-    // employee.todayOut.locationDetails =  {
-    //   place: null,
-    //   dist: null
-    // };      
   }
     
 }
@@ -187,19 +169,6 @@ async function markOut() {
     message.success("MarkOut Success");
     console.log("markout");
     emits('update');
-    // previous state
-    // if (employee.state == 'IN' && !employee.todayOut.time){
-    //   employee.todayOut.time = new Date(response.data.time);
-    //   employee.todayOut.location.lat = latitude.value;
-    //   employee.todayOut.location.lon = longitude.value;
-    //   employee.todayOut.locationDetails = response.data.nearest;
-
-    // }    
-    // // on success response update 
-    // employee.state =  response.data.state
-    // employee.time = new Date(response.data.time);
-    // employee.location.lat = latitude.value;
-    // employee.location.lon = longitude.value; 
   }
 }
 
