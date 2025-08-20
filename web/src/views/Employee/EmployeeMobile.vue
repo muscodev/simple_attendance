@@ -5,7 +5,7 @@
 
       <n-page-header class="w-full bg-blue-600 shadow px-4 py-2 flex justify-between items-center">
         <template #title>
-          🧑 SA
+          | 🧑 SA | {{ tanant?.name }}
         </template>
      
       </n-page-header>
@@ -29,9 +29,10 @@
 import {NPageHeader,  NMessageProvider, NTabs, NTabPane, useMessage} from 'naive-ui';
 import AttendanceTracker from '../../components/AttendanceTracker.vue';
 import { onMounted, ref } from 'vue';
-import { getme } from '../../services/employeeService'
+import { getme, getMyTenant } from '../../services/employeeService'
 
 const employee = ref();
+const tanant = ref();
 const activeTab = ref('home')
 
 const message = useMessage();
@@ -40,7 +41,7 @@ const updateMe = async ()=>{
   try{
     let response =  await getme();
     employee.value = response.data;
-
+    tanant.value = (await getMyTenant()).data;
   }catch(error){
     if(error.response.status == 401){
       message.error(error.response.data.detail);

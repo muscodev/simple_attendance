@@ -4,6 +4,9 @@ export function getme(){
     return api.get(`/api/employee/me`);
 }
 
+export function getMyTenant(){
+    return api.get(`/api/employee/mytenant`);
+}
 
 export function empMarkIn(coordinate){
 
