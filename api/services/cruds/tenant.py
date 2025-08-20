@@ -279,6 +279,7 @@ class AttendanceRepo(CRUDBase[Attendance, AttendanceCreate, AttendanceCreate]):
         start_of_tomorrow = start_of_today + timedelta(days=1)
         query = (
             select(GeoMarking, Attendance)
+            .join(GeoMarking, Attendance.geo_marking_id == GeoMarking.id)            
             .where(Attendance.tenant_id == tenant_id)
             .where(Attendance.employee_id == employee_id)
             .where(Attendance.status == 'IN')
