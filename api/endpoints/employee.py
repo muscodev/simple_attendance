@@ -77,6 +77,18 @@ async def get_me(
         **states
     }
 
+@router.get("/employee/mytenant")
+async def get_my_tenant(
+    employee: Employee = Depends(get_employee),
+    db: AsyncSession = Depends(get_session),
+):
+    """        Get the tenant information of the employee.
+        Returns the tenant details if found.
+    """
+    return await employee_service.get_tenant(employee.tenant_id, db)
+
+
+
 
 @router.post("/employee/markin")
 async def mark_in(

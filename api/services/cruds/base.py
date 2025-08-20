@@ -38,6 +38,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, updateSchemaType]):
         id: uuid.UUID,
         query: Optional[Select] = None
     ) -> Optional[ModelType]:
+        """
+            Get a single object by its ID.
+            If query is provided, it will be used to filter the object.
+            Otherwise, it defaults to selecting the object by ID.
+        """
         query = query if query is not None else select(self.model).where(self.model.id == id)        
         return await self._get(db, query)
 
