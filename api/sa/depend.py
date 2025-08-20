@@ -1,4 +1,4 @@
-from fastapi import Cookie, Request, Depends, HTTPException, status
+from fastapi import Cookie, Request, Depends, HTTPException, status, Response
 import logging
 import uuid
 from ..services.cruds.tenant import user_repo
@@ -6,6 +6,7 @@ from api.services.employee_service import employee_service
 from .auth import validate_admin
 from .db import get_session, AsyncSession
 from .utils import device_hash, is_mobile
+from api.sa.settings import settings
 
 logger = logging.getLogger()
 
@@ -34,6 +35,7 @@ async def get_admin(request: Request, token: dict = Depends(validate_admin), db:
 
 async def get_employee(
         request: Request,
+        response: Response,
         db: AsyncSession = Depends(get_session),
         act_employee: str = Cookie(None),
         rft_employee: str = Cookie(None)
@@ -61,7 +63,7 @@ async def get_employee(
             )      
         device = device_hash(request)
 
-        token = await employee_service.validate_employee_session(db, act_employee, rft_employee, device)
+        token, new_session = await employee_service.validate_employee_session(db, act_employee, rft_employee, device)
         if token is None:
             logger.error('session validation error')  
             raise HTTPException(
@@ -81,13 +83,21 @@ async def get_employee(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="account is deactive or missing"
-            )     
+            )
+        if new_session:
+            response.set_cookie(
+                "act_employee", token.token_hash, httponly=True,
+                max_age=settings.employee_access_token_expiry_minute*60,
+                path=settings.COOKIE_PATH,
+                secure=settings.COOKIE_SECURE,
+                samesite=settings.COOKIE_SAMESITE
+            )  
         return employee
            
 
     except Exception as e:
         # raise
-        logger.error(str(e), stack_info=True)
+        logger.error(str(e),exc_info=1)
         raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not authenticated (some auth issue))"

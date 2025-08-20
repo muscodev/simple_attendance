@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone, date
 from api.services.cruds.tenant import (
     employee_repo, EmployeeRepo, attendance_repo, AttendanceRepo, Attendance,
     TokenRepo, token_repo, TokenCreate, Token, AttendanceCreate, Employee, GeoMarking,
-    geomarking_repo
+    geomarking_repo, tenant_repo, Tenant 
     )
 from api.sa.utils import (
     create_token, validate_token,
@@ -99,12 +99,12 @@ class EmployeeService:
         access_token: str,
         refresh_token: str,
         device_hash: str
-    ) -> Token | None:
+    ) -> Tuple[Token, bool] | None:
         # jwt verify
         data = self.validate_access_token(access_token)
 
         if data is None:
-            logger.error("jwt access token expired or missing")
+            logger.error(f"jwt access token is {'missing' if not access_token else 'invalid'}")
             # jwt expied 
             # validate refresh jwt token
             refresh = self.validate_refresh_token(refresh_token)
@@ -151,7 +151,7 @@ class EmployeeService:
                 )
                 logger.debug("new access token generated")
             # set access token in response
-                return new_access_token
+                return new_access_token, True
             # return Token details
         
         # on access jwt verified
@@ -160,9 +160,9 @@ class EmployeeService:
         access_token = await self.get_access_token(
             uuid.UUID(data.tenant_id), uuid.UUID(data.employee_id), db
         )
-        if not access_token and access_token.device_hash != device_hash:
+        if not access_token or access_token.device_hash != device_hash:
             return None
-        return access_token
+        return access_token, False
         # return token details
 
     async def get_tokens(
@@ -431,5 +431,15 @@ class EmployeeService:
 
         return merged
 
+    async def get_tenant(
+            self,
+            tenant_id: uuid.UUID,
+            db: AsyncSession
+    ) -> Tenant | None:
+        """
+            Get tenant by ID.
+            Returns None if not found.
+        """
+        return await tenant_repo.get(db, tenant_id)
 
 employee_service = EmployeeService()
