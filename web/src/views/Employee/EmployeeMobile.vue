@@ -1,11 +1,12 @@
 
 
 <template>
-  <div class="min-h-screen flex flex-col items-center py-5 bg-gray-100">
+  <div class="min-h-screen flex flex-col items-center py-5 ">
 
       <n-page-header class="w-full bg-blue-600 shadow px-4 py-2 flex justify-between items-center">
         <template #title>
-          | 🧑 SA | {{ tanant?.name }}
+          <p>  SA | {{ tanant?.name }}</p>
+          <p>🧑  | {{ employee?.name }}</p>
         </template>
      
       </n-page-header>
