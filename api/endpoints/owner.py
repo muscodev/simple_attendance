@@ -1,29 +1,27 @@
-from fastapi import APIRouter, HTTPException, Request, Response, Depends, Form
-from fastapi. responses import  HTMLResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
-from ..schema.general import LoginPost
-from ..sa.settings import settings
-from ..sa.db import get_session
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..models import UserCreateSchema
 from ..sa.auth import (
-    create_owner_access_token,
-    get_password_hash,
     Levels,
     create_agent_hash,
-    )
+    create_owner_access_token,
+    get_password_hash,
+)
+from ..sa.db import get_session
+from ..sa.settings import settings
+from ..schema.general import LoginPost
+from ..services.cruds.tenant import TenantCreate, UserCreate, tenant_repo, user_repo
 
-from ..services.cruds.tenant import (
-    tenant_repo, TenantCreate,
-    user_repo, UserCreate
-) 
-from ..models import UserCreateSchema
+router_no_auth = APIRouter(tags=["Owner"])
 
-router_no_auth = APIRouter(tags=['Owner'])
-
-router = APIRouter(tags=['Owner'])
+router = APIRouter(tags=["Owner"])
 
 
-@router_no_auth.get('/owner/login', response_class=HTMLResponse)
+@router_no_auth.get("/owner/login", response_class=HTMLResponse)
 async def owner_login(request: Request):
     return """
     <!DOCTYPE html>
@@ -75,75 +73,94 @@ async def owner_login(request: Request):
     </html>
     """
 
-@router_no_auth.post('/owner/login')
-async def owner_login_post(request: Request, response: Response, username: str = Form(...), password: str = Form(...)):
+
+@router_no_auth.post("/owner/login")
+async def owner_login_post(
+    request: Request,
+    response: Response,
+    username: str = Form(...),
+    password: str = Form(...),
+):
 
     if settings.owner_username != username or settings.owner_password != password:
         raise HTTPException(status_code=400, detail="Invalid credentials")
     payload = create_agent_hash(request)
-    token = create_owner_access_token(payload, settings.owner_access_token_expiry_minute*60)
-    response.set_cookie("access_token", token, httponly=True, max_age=settings.owner_access_token_expiry_minute*60)
+    token = create_owner_access_token(
+        payload, settings.owner_access_token_expiry_minute * 60
+    )
+    response.set_cookie(
+        "access_token",
+        token,
+        httponly=True,
+        max_age=settings.owner_access_token_expiry_minute * 60,
+    )
     return {"access_token": token}
 
 
-@router.post('/owner/tenant')
-async def create_tenant(tenant: TenantCreate, db: AsyncSession= Depends(get_session)):
+@router.post("/owner/tenant")
+async def create_tenant(tenant: TenantCreate, db: AsyncSession = Depends(get_session)):
     return await tenant_repo.create(db, tenant)
 
 
-@router.get('/owner/tenant/{id}')
-async def get_tenant(id: uuid.UUID, db: AsyncSession= Depends(get_session)):
+@router.get("/owner/tenant/{id}")
+async def get_tenant(id: uuid.UUID, db: AsyncSession = Depends(get_session)):
     return await tenant_repo.get(db, id)
 
 
-
-@router.get('/owner/tenant/{id}/deactivate')
-async def deactivate_tenant(id: uuid.UUID, db: AsyncSession= Depends(get_session)):
+@router.get("/owner/tenant/{id}/deactivate")
+async def deactivate_tenant(id: uuid.UUID, db: AsyncSession = Depends(get_session)):
     return await tenant_repo.deactivate(db, id)
 
 
-@router.get('/owner/tenant/{id}/activate')
-async def activate_tenant(id: uuid.UUID, db: AsyncSession= Depends(get_session)):
+@router.get("/owner/tenant/{id}/activate")
+async def activate_tenant(id: uuid.UUID, db: AsyncSession = Depends(get_session)):
     return await tenant_repo.activate(db, id)
 
 
-@router.get('/owner/tenants')
+@router.get("/owner/tenants")
 async def get_tenants(db: AsyncSession = Depends(get_session)):
     return await tenant_repo.get_all(db)
 
 
-
 # user apis
-@router.post('/owner/tenants/user')
-async def create_tenant_user(tenant_user: UserCreateSchema, db: AsyncSession = Depends(get_session)):
+@router.post("/owner/tenants/user")
+async def create_tenant_user(
+    tenant_user: UserCreateSchema, db: AsyncSession = Depends(get_session)
+):
     hashed_pw = get_password_hash(tenant_user.password)
-        # Create the real user create model
+    # Create the real user create model
     user_data = UserCreate(
         tenant_id=tenant_user.tenant_id,
         email=tenant_user.email,
         password_hash=hashed_pw,
         role=tenant_user.role,
-        is_active=tenant_user.is_active
+        is_active=tenant_user.is_active,
     )
 
     return await user_repo.create(db, user_data)
 
 
-@router.get('/owner/tenant/{tenant_id}/user/{id}')
-async def get_tenant_user(tenant_id: uuid.UUID, id: uuid.UUID, db: AsyncSession = Depends(get_session)):
+@router.get("/owner/tenant/{tenant_id}/user/{id}")
+async def get_tenant_user(
+    tenant_id: uuid.UUID, id: uuid.UUID, db: AsyncSession = Depends(get_session)
+):
     return await user_repo.get(db, id)
 
 
-@router.get('/owner/tenant/{tenant_id}/user/{id}/deactivate')
-async def deactivate_tenant_user(tenant_id: uuid.UUID, id: uuid.UUID, db: AsyncSession = Depends(get_session)):
+@router.get("/owner/tenant/{tenant_id}/user/{id}/deactivate")
+async def deactivate_tenant_user(
+    tenant_id: uuid.UUID, id: uuid.UUID, db: AsyncSession = Depends(get_session)
+):
     return await user_repo.deactivate(db, id)
 
 
-@router.get('/owner/tenant/{tenant_id}/user/{id}/deactivate')
-async def activate_tenant_user(tenant_id: uuid.UUID, id: uuid.UUID, db: AsyncSession = Depends(get_session)):
+@router.get("/owner/tenant/{tenant_id}/user/{id}/deactivate")
+async def activate_tenant_user(
+    tenant_id: uuid.UUID, id: uuid.UUID, db: AsyncSession = Depends(get_session)
+):
     return await user_repo.activate(db, id)
 
 
-@router.get('/owner/tenant/{tenant_id}/users')
+@router.get("/owner/tenant/{tenant_id}/users")
 async def get_tenant_users(db: AsyncSession = Depends(get_session)):
     return await user_repo.get_all(db)

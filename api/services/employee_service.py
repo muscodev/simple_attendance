@@ -1,26 +1,36 @@
-from dataclasses import dataclass, field
-from typing import Optional, Tuple
-import uuid
 import logging
+import uuid
 import zoneinfo
+from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta, timezone
+from typing import Optional, Tuple
+
+from pydantic import BaseModel
 from sqlalchemy import select
-from datetime import datetime, timedelta, timezone, date
-from api.services.cruds.tenant import (
-    employee_repo, EmployeeRepo, attendance_repo, AttendanceRepo, Attendance,
-    TokenRepo, token_repo, TokenCreate, Token, AttendanceCreate, Employee, GeoMarking,
-    geomarking_repo, tenant_repo, Tenant 
-    )
-from api.sa.utils import (
-    create_token, validate_token,
-    rotate_token, revoke_token
-    )
-from datetime import datetime
-from api.utlis import geo
+
 from api.sa.auth import Levels
 from api.sa.db import AsyncSession
 from api.sa.settings import settings
+from api.sa.utils import create_token, revoke_token, rotate_token, validate_token
 from api.schema.general import Coordinate
-from pydantic import BaseModel
+from api.services.cruds.tenant import (
+    Attendance,
+    AttendanceCreate,
+    AttendanceRepo,
+    Employee,
+    EmployeeRepo,
+    GeoMarking,
+    Tenant,
+    Token,
+    TokenCreate,
+    TokenRepo,
+    attendance_repo,
+    employee_repo,
+    geomarking_repo,
+    tenant_repo,
+    token_repo,
+)
+from api.utlis import geo
 
 logger = logging.getLogger()
 
@@ -37,16 +47,22 @@ class JwtToken(BaseModel):
 class EmployeeService:
     employee_repo: EmployeeRepo = field(default=employee_repo, init=False, repr=False)
     token_repo: TokenRepo = field(default=token_repo, init=False, repr=False)
-    attendance_repo: AttendanceRepo = field(default=attendance_repo, init=False, repr=False)
+    attendance_repo: AttendanceRepo = field(
+        default=attendance_repo, init=False, repr=False
+    )
 
     # 1. Create a login or attendance token (short-lived)
     async def create_employee_token(
-            self,
-            db,tenant_id: uuid.UUID, employee_id: uuid.UUID) -> str:
+        self, db, tenant_id: uuid.UUID, employee_id: uuid.UUID
+    ) -> str:
         """Create login token if no refresh_token is issued already"""
-        token = await token_repo.get_token_by(db, tenant_id, employee_id, 'refresh_token_employee')
+        token = await token_repo.get_token_by(
+            db, tenant_id, employee_id, "refresh_token_employee"
+        )
         if token:
-            logger.info("refresh token already available, cannot create new login token")
+            logger.info(
+                "refresh token already available, cannot create new login token"
+            )
             return None
         payload = JwtToken(
             employee_id=str(employee_id),
@@ -55,7 +71,8 @@ class EmployeeService:
             purpose="login",
         )
         return create_token(
-            payload.model_dump(), expire_second=settings.emplployee_login_token_expiry_minute*60
+            payload.model_dump(),
+            expire_second=settings.emplployee_login_token_expiry_minute * 60,
         )  # 1 minute
 
     # 2. Validate the token and return employee_id
@@ -68,13 +85,29 @@ class EmployeeService:
         return JwtToken(**data)
 
     # 3. Create access token (for full login or long session)
-    async def create_access_token(self, tenant: uuid.UUID, employee_id: uuid.UUID) -> str:
-        payload = {"employee_id": str(employee_id), "tenant_id": str(tenant), "level_": Levels.EMPLOYEE.value, "purpose": "auth"}
-        return create_token(payload, expire_second=settings.employee_access_token_expiry_minute*60)  # 24 hrs
+    async def create_access_token(
+        self, tenant: uuid.UUID, employee_id: uuid.UUID
+    ) -> str:
+        payload = {
+            "employee_id": str(employee_id),
+            "tenant_id": str(tenant),
+            "level_": Levels.EMPLOYEE.value,
+            "purpose": "auth",
+        }
+        return create_token(
+            payload, expire_second=settings.employee_access_token_expiry_minute * 60
+        )  # 24 hrs
 
-    async def create_refresh_token(self, tenant: uuid.UUID, employee_id: uuid.UUID) -> str:
-        payload = {"employee_id": str(employee_id), "tenant_id": str(tenant),"level_": Levels.EMPLOYEE.value, "purpose": "auth_refresh"}
-        return create_token(payload) 
+    async def create_refresh_token(
+        self, tenant: uuid.UUID, employee_id: uuid.UUID
+    ) -> str:
+        payload = {
+            "employee_id": str(employee_id),
+            "tenant_id": str(tenant),
+            "level_": Levels.EMPLOYEE.value,
+            "purpose": "auth_refresh",
+        }
+        return create_token(payload)
 
     def validate_access_token(self, token: str = None) -> JwtToken | None:
         if token is None:
@@ -82,78 +115,81 @@ class EmployeeService:
         data = validate_token(token)
         if not data or data.get("purpose") != "auth":
             return None
-        return JwtToken(**data) if data is not None and data.get("level_") == Levels.EMPLOYEE.value else None
+        return (
+            JwtToken(**data)
+            if data is not None and data.get("level_") == Levels.EMPLOYEE.value
+            else None
+        )
 
     def validate_refresh_token(self, token: str = None) -> JwtToken | None:
-        """ Retun True|None"""
+        """Retun True|None"""
         if token is None:
-            return None        
+            return None
         data = validate_token(token)
         if not data or data.get("purpose") != "auth_refresh":
             return None
-        return JwtToken(**data) if data is not None and data.get("level_") == Levels.EMPLOYEE.value else None
+        return (
+            JwtToken(**data)
+            if data is not None and data.get("level_") == Levels.EMPLOYEE.value
+            else None
+        )
 
     async def validate_employee_session(
-        self,
-        db: AsyncSession,
-        access_token: str,
-        refresh_token: str,
-        device_hash: str
+        self, db: AsyncSession, access_token: str, refresh_token: str, device_hash: str
     ) -> Tuple[Token, bool] | None:
         # jwt verify
         data = self.validate_access_token(access_token)
 
         if data is None:
-            logger.error(f"jwt access token is {'missing' if not access_token else 'invalid'}")
-            # jwt expied 
+            logger.error(
+                f"jwt access token is {'missing' if not access_token else 'invalid'}"
+            )
+            # jwt expied
             # validate refresh jwt token
             refresh = self.validate_refresh_token(refresh_token)
-            
+
             # expired refresh token
             if refresh is None:
                 logger.error("jwt refresh token expired or missing")
-            # return expired please contact Admin
+                # return expired please contact Admin
                 return None
-            
+
             # valid refresh token
             # verify token in database
             refresh_token_db = await self.get_refresh_token(
-                uuid.UUID(refresh.tenant_id), 
-                uuid.UUID(refresh.employee_id),
-                db
-                )
+                uuid.UUID(refresh.tenant_id), uuid.UUID(refresh.employee_id), db
+            )
             # validate device
             if refresh_token_db.device_hash != device_hash:
-                logger.debug("refresh token device and current active device are not matching")
+                logger.debug(
+                    "refresh token device and current active device are not matching"
+                )
                 return None
             # if available
             if refresh_token_db is not None:
                 # delete access token in database
                 access_token = await self.get_access_token(
-                    refresh_token_db.tenant_id,
-                    refresh_token_db.employee_id,
-                    db
+                    refresh_token_db.tenant_id, refresh_token_db.employee_id, db
                 )
-                await self.token_repo.delete(db, access_token.id)                
-            # create new access token
-                new_access_token_create = await self.create_access_token( 
-                    refresh_token_db.tenant_id,
-                    refresh_token_db.employee_id   
+                await self.token_repo.delete(db, access_token.id)
+                # create new access token
+                new_access_token_create = await self.create_access_token(
+                    refresh_token_db.tenant_id, refresh_token_db.employee_id
                 )
-            # store token in database
+                # store token in database
 
                 new_access_token = await self.store_access_token(
                     new_access_token_create,
                     refresh_token_db.tenant_id,
                     refresh_token_db.employee_id,
                     device_hash,
-                    db
+                    db,
                 )
                 logger.debug("new access token generated")
-            # set access token in response
+                # set access token in response
                 return new_access_token, True
             # return Token details
-        
+
         # on access jwt verified
 
         # check token availablity in database
@@ -170,7 +206,7 @@ class EmployeeService:
         tenant: uuid.UUID,
         employee_id: uuid.UUID,
         device_hash: str,
-        db: AsyncSession
+        db: AsyncSession,
     ) -> Tuple[str, str]:
 
         refresh = await self.create_refresh_token(
@@ -197,7 +233,7 @@ class EmployeeService:
             device_hash,
             db,
         )
- 
+
         return refresh, access
 
     #  Store access token in database
@@ -207,15 +243,16 @@ class EmployeeService:
         tenant: uuid.UUID,
         employee_id: uuid.UUID,
         device_hash: str,
-        db: AsyncSession
+        db: AsyncSession,
     ) -> str:
         new_token = TokenCreate(
             tenant_id=tenant,
             employee_id=employee_id,
-            token_type='access_token_employee',
+            token_type="access_token_employee",
             token_hash=access,
             device_hash=device_hash,
-            expires_at=datetime.now() + timedelta(minutes=settings.employee_access_token_expiry_minute)
+            expires_at=datetime.now()
+            + timedelta(minutes=settings.employee_access_token_expiry_minute),
         )
         return await token_repo.create(db, new_token)
 
@@ -226,64 +263,41 @@ class EmployeeService:
         tenant: uuid.UUID,
         employee_id: uuid.UUID,
         device_hash: str,
-        db: AsyncSession
+        db: AsyncSession,
     ) -> str:
         new_token = TokenCreate(
             tenant_id=tenant,
             employee_id=employee_id,
-            token_type='refresh_token_employee',
+            token_type="refresh_token_employee",
             token_hash=refresh,
             device_hash=device_hash,
-            expires_at=datetime.now() + timedelta(days=365)
+            expires_at=datetime.now() + timedelta(days=365),
         )
         return await token_repo.create(db, new_token)
 
     #  Get access token in database
     async def get_access_token(
-        self,
-        tenant: uuid.UUID,
-        employee_id: uuid.UUID,
-        db: AsyncSession
+        self, tenant: uuid.UUID, employee_id: uuid.UUID, db: AsyncSession
     ) -> Token | None:
         return await self.token_repo.get_token_by(
-            db,
-            tenant,
-            employee_id,
-            'access_token_employee'
+            db, tenant, employee_id, "access_token_employee"
         )
 
     #  Get refresh token in database
     async def get_refresh_token(
-        self,
-        tenant: uuid.UUID,
-        employee_id: uuid.UUID,
-        db: AsyncSession
+        self, tenant: uuid.UUID, employee_id: uuid.UUID, db: AsyncSession
     ) -> Token | None:
         return await self.token_repo.get_token_by(
-            db,
-            tenant,
-            employee_id,
-            'refresh_token_employee'
+            db, tenant, employee_id, "refresh_token_employee"
         )
 
     # 4. Remove (revoke) token (log out or session expire)
     async def clear_session(
-        self,
-        tenant: uuid.UUID,
-        employee_id: uuid.UUID,
-        db: AsyncSession
+        self, tenant: uuid.UUID, employee_id: uuid.UUID, db: AsyncSession
     ):
-        access_token = await self.get_access_token(
-                    tenant,
-                    employee_id,
-                    db
-                )
+        access_token = await self.get_access_token(tenant, employee_id, db)
 
-        refresh_token = await self.get_refresh_token(
-                    tenant,
-                    employee_id,
-                    db
-                )
+        refresh_token = await self.get_refresh_token(tenant, employee_id, db)
 
         if access_token:
 
@@ -308,21 +322,17 @@ class EmployeeService:
 
     # 6. Mark attendance "in"
     async def mark_attendance_in(
-        self,
-        employee: Employee,
-        coordinates: Coordinate,
-        db: AsyncSession
+        self, employee: Employee, coordinates: Coordinate, db: AsyncSession
     ) -> Tuple[Attendance, GeoMarking] | Tuple[None, None]:
         marked_locations = await geomarking_repo.get_all_by_tenant(
-            db,
-            employee.tenant_id
+            db, employee.tenant_id
         )
         nearest, dist = None, 0
         if marked_locations:
             nearest, dist = geo.find_nearest(
                 marked_locations,
                 coordinates.model_dump(),
-                location_extract_method=lambda loc: (loc.latitude, loc.longitude)
+                location_extract_method=lambda loc: (loc.latitude, loc.longitude),
             )
         obj_in = AttendanceCreate(
             tenant_id=employee.tenant_id,
@@ -331,15 +341,13 @@ class EmployeeService:
             latitude=coordinates.lat,
             longitude=coordinates.lon,
             geo_marking_id=nearest.id if nearest else None,
-            distance_from_marking=dist
+            distance_from_marking=dist,
         )
         # verify the last status of attendance
         _, last_mark = await self.attendance_repo.last_mark_today(
-            db,
-            employee.tenant_id,
-            employee.id
+            db, employee.tenant_id, employee.id
         )
-        if last_mark and last_mark.status == 'IN':
+        if last_mark and last_mark.status == "IN":
             return None, None
         # mark attendance in to table
         att = Attendance.model_validate(await self.attendance_repo.create(db, obj_in))
@@ -347,20 +355,16 @@ class EmployeeService:
 
     # 7. Mark attendance "out"
     async def mark_attendance_out(
-        self,
-        employee: Employee,
-        coordinates: Coordinate,
-        db: AsyncSession
+        self, employee: Employee, coordinates: Coordinate, db: AsyncSession
     ) -> Tuple[Attendance, GeoMarking] | Tuple[None, None]:
         marked_locations = await geomarking_repo.get_all_by_tenant(
-            db,
-            employee.tenant_id
+            db, employee.tenant_id
         )
 
         nearest, dist = geo.find_nearest(
             marked_locations,
             coordinates.model_dump(),
-            location_extract_method=lambda loc: (loc.latitude, loc.longitude)
+            location_extract_method=lambda loc: (loc.latitude, loc.longitude),
         )
         obj_in = AttendanceCreate(
             tenant_id=employee.tenant_id,
@@ -370,31 +374,33 @@ class EmployeeService:
             longitude=coordinates.lon,
             geo_marking_id=nearest.id,
             distance_from_marking=dist,
-            status='OUT'
-        )        
+            status="OUT",
+        )
         # verify the last status of attendance
         _, last_mark = await self.attendance_repo.last_mark_today(
-            db,
-            employee.tenant_id,
-            employee.id
-
+            db, employee.tenant_id, employee.id
         )
-        if not last_mark or (last_mark and last_mark.status == 'OUT'):
+        if not last_mark or (last_mark and last_mark.status == "OUT"):
             return None, None
         # mark attendance in to table
         att = Attendance.model_validate(await self.attendance_repo.create(db, obj_in))
         return att, nearest
 
+    async def get_state(
+        self, tenant_id: uuid.UUID, employee_id: uuid.UUID, db: AsyncSession
+    ):
 
-    async def get_state(self, tenant_id: uuid.UUID, employee_id: uuid.UUID, db: AsyncSession):
-        
-        state_near, state = await self.attendance_repo.last_mark_today(db, tenant_id, employee_id)
-        today_in_near, today_in = await self.attendance_repo.today_in(db, tenant_id, employee_id)
+        state_near, state = await self.attendance_repo.last_mark_today(
+            db, tenant_id, employee_id
+        )
+        today_in_near, today_in = await self.attendance_repo.today_in(
+            db, tenant_id, employee_id
+        )
         return {
-            'state': Attendance.model_validate(state).model_dump() if state else {},
-            'state_near': state_near.model_dump() if state_near else None,
-            'today_in_near': today_in_near.model_dump() if today_in_near else None,
-            'today_in': Attendance.model_validate(today_in) if today_in else {}
+            "state": Attendance.model_validate(state).model_dump() if state else {},
+            "state_near": state_near.model_dump() if state_near else None,
+            "today_in_near": today_in_near.model_dump() if today_in_near else None,
+            "today_in": Attendance.model_validate(today_in) if today_in else {},
         }
 
     async def get_attendance_by_date(
@@ -403,12 +409,16 @@ class EmployeeService:
         employee_id: uuid.UUID,
         start_date: date,
         end_date: date,
-        db: AsyncSession
+        db: AsyncSession,
     ):
         client_tz = zoneinfo.ZoneInfo(settings.timezone)
-        start_of_start_date = datetime.combine(start_date, datetime.min.time(),tzinfo=client_tz)
-        end_of_end_date = datetime.combine(end_date, datetime.max.time(),tzinfo=client_tz)
-        print(start_of_start_date,end_of_end_date)
+        start_of_start_date = datetime.combine(
+            start_date, datetime.min.time(), tzinfo=client_tz
+        )
+        end_of_end_date = datetime.combine(
+            end_date, datetime.max.time(), tzinfo=client_tz
+        )
+        print(start_of_start_date, end_of_end_date)
         query = (
             select(Attendance, Employee, GeoMarking)
             .join(Employee, Attendance.employee_id == Employee.id)
@@ -423,23 +433,22 @@ class EmployeeService:
         result = (await db.exec(query)).all()
         merged = []
         for a, e, g in result:
-            merged.append({
-                **Attendance.model_validate(a).model_dump(),
-                **{f"employee_{k}": v for k, v in e.dict().items()},
-                **{f"geomarking_{k}": v for k, v in g.dict().items()},
-            })
+            merged.append(
+                {
+                    **Attendance.model_validate(a).model_dump(),
+                    **{f"employee_{k}": v for k, v in e.dict().items()},
+                    **{f"geomarking_{k}": v for k, v in g.dict().items()},
+                }
+            )
 
         return merged
 
-    async def get_tenant(
-            self,
-            tenant_id: uuid.UUID,
-            db: AsyncSession
-    ) -> Tenant | None:
+    async def get_tenant(self, tenant_id: uuid.UUID, db: AsyncSession) -> Tenant | None:
         """
-            Get tenant by ID.
-            Returns None if not found.
+        Get tenant by ID.
+        Returns None if not found.
         """
         return await tenant_repo.get(db, tenant_id)
+
 
 employee_service = EmployeeService()

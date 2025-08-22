@@ -1,13 +1,16 @@
-from fastapi import APIRouter, HTTPException, Response, Depends, Request, status
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.exc import IntegrityError
-from ..schema.general import Coordinate
+
 from api.models import Employee
-from api.services.employee_service import employee_service
-from api.sa.settings import settings
 from api.sa.db import AsyncSession, get_session
 from api.sa.depend import get_employee
+from api.sa.settings import settings
 from api.sa.utils import device_hash, is_mobile
-import logging
+from api.services.employee_service import employee_service
+
+from ..schema.general import Coordinate
 
 router = APIRouter(tags=["Employee"])
 logger = logging.getLogger()
@@ -21,45 +24,41 @@ async def employee_login(
     db: AsyncSession = Depends(get_session),
 ):
 
-    # if not mobile device raise error        
+    # if not mobile device raise error
     if not is_mobile(request):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Device"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Device"
         )
 
     data = employee_service.validate_employee_token(token=token)
     # create refreshtoken and access token
     if not data:
-        raise HTTPException(
-            status_code=400, detail="Invalid token validation failed"
-        )
+        raise HTTPException(status_code=400, detail="Invalid token validation failed")
     try:
 
         refresh, access = await employee_service.get_tokens(
-            data.tenant_id,
-            data.employee_id,
-            device_hash(request=request),
-            db
+            data.tenant_id, data.employee_id, device_hash(request=request), db
         )
         response.set_cookie(
-            "act_employee", access, httponly=True,
-            max_age=settings.employee_access_token_expiry_minute*60,
+            "act_employee",
+            access,
+            httponly=True,
+            max_age=settings.employee_access_token_expiry_minute * 60,
             path=settings.COOKIE_PATH,
             secure=settings.COOKIE_SECURE,
-            samesite=settings.COOKIE_SAMESITE
+            samesite=settings.COOKIE_SAMESITE,
         )
         response.set_cookie(
             "rft_employee",
             refresh,
             httponly=True,
-            max_age=365*24*60*60,
+            max_age=365 * 24 * 60 * 60,
             path=settings.COOKIE_PATH,
             secure=settings.COOKIE_SECURE,
-            samesite=settings.COOKIE_SAMESITE
-        )        
-        return {'refresh': refresh, 'access': access}
-    
+            samesite=settings.COOKIE_SAMESITE,
+        )
+        return {"refresh": refresh, "access": access}
+
     except IntegrityError:
         logger.info("employee login attempt failed due to token already exist")
         raise HTTPException(status_code=400, detail="token login got error")
@@ -72,22 +71,18 @@ async def get_me(
 ):
     states = await employee_service.get_state(employee.tenant_id, employee.id, db)
 
-    return {
-        **employee.model_dump(),
-        **states
-    }
+    return {**employee.model_dump(), **states}
+
 
 @router.get("/employee/mytenant")
 async def get_my_tenant(
     employee: Employee = Depends(get_employee),
     db: AsyncSession = Depends(get_session),
 ):
-    """        Get the tenant information of the employee.
-        Returns the tenant details if found.
+    """Get the tenant information of the employee.
+    Returns the tenant details if found.
     """
     return await employee_service.get_tenant(employee.tenant_id, db)
-
-
 
 
 @router.post("/employee/markin")
@@ -97,12 +92,12 @@ async def mark_in(
     db: AsyncSession = Depends(get_session),
 ):
     attenadance, near_geo_mark = await employee_service.mark_attendance_in(
-        employee,
-        coordinates,
-        db
+        employee, coordinates, db
     )
     if attenadance is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="invalid option")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="invalid option"
+        )
     response = attenadance.model_dump()
     response.update({"place": near_geo_mark.name})
     return response
@@ -116,15 +111,12 @@ async def mark_out(
 ):
 
     attenadance, near_geo_mark = await employee_service.mark_attendance_out(
-        employee,
-        coordinates,
-        db
+        employee, coordinates, db
     )
 
     if attenadance is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="invalid option"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="invalid option"
         )
     response = attenadance.model_dump()
     response.update({"place": near_geo_mark.name})
