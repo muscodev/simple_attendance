@@ -47,6 +47,9 @@ install-api-prod: ## install API dependencies for production
 install: check-deps install-api install-web ## Install all dependencies
 	@echo "✅ All dependencies installed successfully!"
 
+install-prod: check-deps install-api-prod install-web ## Install all dependencies
+	@echo "✅ All dependencies installed successfully!"
+
 
 # Code quality
 lint: ## Run flake8 linting
@@ -84,9 +87,17 @@ migrate: ## Run database migrations
 # Quality checks (combine multiple checks)
 check: lint format-check
 
+
+# Testing
+test: ## Run tests
+	$(PYTEST) tests/ $(filter-out $@,$(MAKECMDGOALS))	
+
+test-cov: ## Run tests with coverage
+	$(PYTEST) --cov=api --cov-report=html 
+
 # Clean up
 clean: ## Clean up cache and temporary files
-	find . -type d -name "__pycache__" -delete
+	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
 	find . -type d -name ".pytest_cache" -exec rm -rf {} +
