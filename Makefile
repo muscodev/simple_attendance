@@ -93,7 +93,7 @@ test: ## Run tests
 	PYTHONPATH=. $(PYTEST) tests/ $(filter-out $@,$(MAKECMDGOALS))	
 
 test-cov: ## Run tests with coverage
-	PYTHONPATH=. $(PYTEST) --cov=api --cov-report=html 
+	PYTHONPATH=. $(PYTEST) --cov=api --cov-report=html  --cov-report=xml
 
 # Clean up
 clean: ## Clean up cache and temporary files

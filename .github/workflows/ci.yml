@@ -71,3 +71,8 @@ jobs:
         run: make install-api
       - name: run tests with coverage
         run: make test-cov
+      - name: Store coverage files
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data
+          path: ./htmlcov
