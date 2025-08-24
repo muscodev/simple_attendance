@@ -74,7 +74,7 @@ jobs:
       - name: Upload coverage badge to artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ./coverage.png  # or ./coverage.svg
+          path: ./coverage-badge.svg  # or ./coverage.svg
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
