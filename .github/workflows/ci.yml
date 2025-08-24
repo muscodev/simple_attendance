@@ -4,7 +4,7 @@ on:
     branches: [main]
   push:
     branches: [main]
-    
+
 permissions:
   contents: read
   pages: write
@@ -79,7 +79,6 @@ jobs:
       - name: Upload coverage badge to artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          name: badges
           path: badges/ 
 
       - name: Deploy to GitHub Pages
