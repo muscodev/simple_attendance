@@ -1,0 +1,62 @@
+name: app-ci 
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Setup uv
+        uses: astral-sh/uv-action@v1
+        with:
+          version: '0.8.0'
+      - name: install dependacies for api
+        run: make install-api
+      - name: check formating
+        run: make lint
+      - name: check formating
+        run: make format-check
+  test:
+    runs-on : ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Setup uv
+        uses: astral-sh/uv-action@v1
+        with:
+          version: '0.8.0'
+      - name: install dependacies for api
+        run: make install-api
+      - name: run tests
+        run: make test
+  coverage:
+    needs: [test]
+    runs-on : ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Setup uv
+        uses: astral-sh/uv-action@v1
+        with:
+          version: '0.8.0'
+      - name: install dependacies for api
+        run: make install-api
+      - name: run tests with coverage
+        run: make test-cov
