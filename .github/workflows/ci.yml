@@ -27,6 +27,12 @@ jobs:
         run: make format-check
   test:
     runs-on : ubuntu-latest
+    env :
+      DB_URL: "sqlite+aiosqlite:///attendance.db"
+      OWNER_USERNAME: "testowner"
+      OWNER_PASSWORD: "testpass"
+      SECRET_KEY: "supersecretkey"
+
     steps:
       - name: checkout code
         uses: actions/checkout@v5
@@ -45,6 +51,11 @@ jobs:
   coverage:
     needs: [test]
     runs-on : ubuntu-latest
+    env :
+      DB_URL: "sqlite+aiosqlite:///attendance.db"
+      OWNER_USERNAME: "testowner"
+      OWNER_PASSWORD: "testpass"
+      SECRET_KEY: "supersecretkey"    
     steps:
       - name: checkout code
         uses: actions/checkout@v5
