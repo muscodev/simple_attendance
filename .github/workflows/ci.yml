@@ -71,13 +71,8 @@ jobs:
         run: make install-api
       - name: run tests with coverage
         run: make test-cov
-      - name: create coverage badge
-        run: |
-          coverage_per=$(grep 'line-rate="' coverage.xml | head -1 | awk '{print $6}' | sed 's/.*line-rate="\(.*\)".*/\1/' | awk '{print $1*100}')
-          anybadge --label=coverage --value="${coverage_per}%" --file=coverage-badge.svg --color=green
-
       - name: Store coverage files
         uses: actions/upload-artifact@v4
         with:
           name: coverage-badge
-          path: ./coverage-badge.svg
+          path: coverage-badge.svg
