@@ -71,8 +71,10 @@ jobs:
         run: make install-api
       - name: run tests with coverage
         run: make test-cov
-      - name: Store coverage files
-        uses: actions/upload-artifact@v4
+      - name: Upload coverage badge to artifact
+        uses: actions/upload-pages-artifact@v2
         with:
-          name: coverage-badge
-          path: coverage-badge.svg
+          path: ./coverage.png  # or ./coverage.svg
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
