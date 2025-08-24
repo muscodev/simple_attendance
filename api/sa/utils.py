@@ -1,14 +1,15 @@
-from fastapi import Request
-from typing import Optional
-import re
 import hashlib
-from datetime import datetime, timedelta
+import logging
+import re
 import time
+from datetime import datetime, timedelta
+from typing import Optional
+
+from fastapi import Request
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
-import logging
-from .settings import settings
 
+from .settings import settings
 
 logger = logging.getLogger()
 
@@ -32,7 +33,7 @@ def validate_token(token: str) -> Optional[dict]:
         logger.error(f"ExpiredSignatureError:{str(e)}")
         return None
     except JWTError as e:
-        logger.error(f"JWTError:{str(e)}")        
+        logger.error(f"JWTError:{str(e)}")
         return None
 
 
@@ -47,9 +48,9 @@ def revoke_token(token: str):
 
 def ip_from_request(request: Request):
     "Return ip address"
-    x_forwarded_for = request.headers.get('x-forwarded-for')
+    x_forwarded_for = request.headers.get("x-forwarded-for")
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]  # In case of multiple proxies
+        ip = x_forwarded_for.split(",")[0]  # In case of multiple proxies
     else:
         ip = request.client.host
     return ip
@@ -64,8 +65,7 @@ def is_mobile(request: Request):
 
     ua = request.headers.get("user-agent")
 
-    if re.search('Mobi|Android|iPhone|iPad|iPod', ua):
+    if re.search("Mobi|Android|iPhone|iPad|iPod", ua):
         return True
 
     return False
-

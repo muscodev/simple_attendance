@@ -1,9 +1,11 @@
 # models.py
 import uuid
 from datetime import datetime, timezone
-from sqlmodel import SQLModel, Field, Column, DateTime
+from typing import Annotated, Optional
+
 from pydantic import BeforeValidator
-from typing import Optional, Annotated
+from sqlmodel import Column, DateTime, Field, SQLModel
+
 from .token import Token
 
 
@@ -122,12 +124,14 @@ class EmployeeRead(EmployeeBase):
 class AttendanceBase(SQLModel):
     tenant_id: uuid.UUID = Field(foreign_key="tenant.id")
     employee_id: uuid.UUID = Field(foreign_key="employee.id")
-    timestamp: UTCDatetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
+    timestamp: UTCDatetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
     latitude: float
     longitude: float
     geo_marking_id: uuid.UUID = Field(foreign_key="geomarking.id")
     distance_from_marking: float
-    status: str = Field(default='IN', max_length=5)
+    status: str = Field(default="IN", max_length=5)
 
 
 # Model for creation
@@ -164,6 +168,7 @@ class GeoMarkingCreate(GeoMarkingBase):
 
 class GeoMarkingCreateschema(GeoMarkingBase):
     pass
+
 
 # ✅ Read model
 class GeoMarkingRead(GeoMarkingBase):
