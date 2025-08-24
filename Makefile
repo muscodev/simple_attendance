@@ -90,10 +90,10 @@ check: lint format-check
 
 # Testing
 test: ## Run tests
-	$(PYTEST) tests/ $(filter-out $@,$(MAKECMDGOALS))	
+	PYTHONPATH=. $(PYTEST) tests/ $(filter-out $@,$(MAKECMDGOALS))	
 
 test-cov: ## Run tests with coverage
-	$(PYTEST) --cov=api --cov-report=html 
+	PYTHONPATH=. $(PYTEST) --cov=api --cov-report=html 
 
 # Clean up
 clean: ## Clean up cache and temporary files
