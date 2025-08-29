@@ -181,9 +181,11 @@ const getCardClass = (day) => {
 };
 
 const formatDate = (date) => {
-  const day = date.getDate();
-  const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-  return `${day} ${dayName}`;
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })
 };
 
 const generateDummyAttendance = (date) => {
@@ -221,7 +223,6 @@ const generateAttendanceData = () => {
   for (let day = 1; day <= daysInMonth; day++) {
     const currentDate = new Date(year, month, day);
     const attendance = generateDummyAttendance(currentDate);
-    
     attendanceData.value.push({
       date: currentDate,
       ...attendance
