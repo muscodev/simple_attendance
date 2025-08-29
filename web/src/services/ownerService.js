@@ -1,4 +1,4 @@
-import api from "../utlis/api"
+import api from "../utils/api"
 
 export function ownerLogin(credentials){
     api.post(

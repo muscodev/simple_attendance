@@ -21,7 +21,7 @@
 import { h,ref,defineEmits, onMounted,watch, computed } from 'vue'
 import { NCard,NDatePicker,NDataTable,NSelect, NForm, NFormItem,NInputNumber,NModal, NButton, NInput, useMessage } from 'naive-ui'
 import { get_attendance_by_date, get_employees } from '../services/adminService'
-import { downloadBlob ,formatAsLocalYYYYMMDD } from '../utlis/general.js'
+import { downloadBlob ,formatAsLocalYYYYMMDD } from '../utils/general.js'
 const message = useMessage()
 const tableRef = ref();
 const employees = ref([])

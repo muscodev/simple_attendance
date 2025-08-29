@@ -1,6 +1,6 @@
 
 import axios from 'axios';
-import { formatAsLocalYYYYMMDD } from '../utlis/general.js'
+import { formatAsLocalYYYYMMDD } from '../utils/general.js'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL, // dynamic from .env
   withCredentials: true, // if using cookies for auth

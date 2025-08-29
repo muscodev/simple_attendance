@@ -10,16 +10,20 @@
         </template>
      
       </n-page-header>
-      <AttendanceTracker :me="employee" class="border-4 rounded-lg border-indigo-500 " @update="updateMe" />
+
       
+      <EmployeeDailyAttendance v-if="activeTab=='history'" > </EmployeeDailyAttendance>
+      <AttendanceTracker v-else :me="employee" class="border-4 rounded-lg border-indigo-500 " @update="updateMe" />
+
+
       <div class="fixed bottom-0 left-0 right-0 bg-white-0 border-t border-gray-200">
+      
       <n-tabs v-model:value="activeTab" type="bar" justify-content="space-around" size="small" >
         <n-tab-pane name="home" tab="🏠 Home" />
         <n-tab-pane name="search" tab="🔍 Search" />
-        <n-tab-pane name="profile" tab="👤 Profile" />
+        <n-tab-pane name="history" tab="🔄 history"/>
       </n-tabs>
       </div>
-
 
 
   </div>
@@ -29,6 +33,7 @@
 <script setup>
 import {NPageHeader,  NMessageProvider, NTabs, NTabPane, useMessage} from 'naive-ui';
 import AttendanceTracker from '../../components/AttendanceTracker.vue';
+import EmployeeDailyAttendance from '../../components/EmployeeDailyAttendance.vue';
 import { onMounted, ref } from 'vue';
 import { getme, getMyTenant } from '../../services/employeeService'
 

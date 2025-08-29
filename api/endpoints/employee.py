@@ -1,4 +1,6 @@
 import logging
+import zoneinfo
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.exc import IntegrityError
@@ -121,6 +123,26 @@ async def mark_out(
     response = attenadance.model_dump()
     response.update({"place": near_geo_mark.name})
     return response
+
+
+@router.get("/employee/attendance_card")
+async def attendance_card(
+    employee: Employee = Depends(get_employee),
+    db: AsyncSession = Depends(get_session),
+):
+
+    client_tz = zoneinfo.ZoneInfo(settings.timezone)
+    start_of_start_date = datetime.now(tz=client_tz).date().replace(day=1)
+    end_of_end_date = datetime.now(tz=client_tz).date()
+
+    attenadance = await employee_service.get_attendance_card(
+        employee.tenant_id,
+        employee.id,
+        start_of_start_date,
+        end_of_end_date,
+        db,
+    )
+    return attenadance
 
 
 @router.get("/employee/nears")
