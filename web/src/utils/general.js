@@ -32,3 +32,12 @@ export function formatAsLocalYYYYMMDD(date) {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+// Calculate work duration
+export function calculateWorkDuration (start, end) {
+  const diff = end - start;
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  return `${hours}h ${minutes}m`;
+};
+

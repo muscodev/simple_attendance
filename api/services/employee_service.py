@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional, Tuple
 
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from api.sa.auth import Levels
 from api.sa.db import AsyncSession
@@ -418,7 +418,7 @@ class EmployeeService:
         end_of_end_date = datetime.combine(
             end_date, datetime.max.time(), tzinfo=client_tz
         )
-        print(start_of_start_date, end_of_end_date)
+
         query = (
             select(Attendance, Employee, GeoMarking)
             .join(Employee, Attendance.employee_id == Employee.id)
@@ -443,6 +443,119 @@ class EmployeeService:
 
         return merged
 
+    async def get_attendance_card(
+        self,
+        tenant_id: uuid.UUID,
+        employee_id: uuid.UUID,
+        start_date: date,
+        end_date: date,
+        db: AsyncSession,
+    ) -> list:
+        query = text("""
+        WITH first_in_details AS (
+            SELECT DISTINCT ON (a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone))
+                a.employee_id,
+                DATE(a.timestamp AT TIME ZONE :timezone) as attendance_date,
+                a.timestamp as first_in_time,
+                a.distance_from_marking as first_in_distance,
+                l.name as first_in_location
+            FROM attendance a
+            JOIN geomarking l ON a.geo_marking_id = l.id
+            WHERE a.status = 'IN'
+                AND a.tenant_id = :tenant_id
+                AND ( a.employee_id = :employee_id)
+                AND DATE(a.timestamp AT TIME ZONE :timezone) >= :start_date
+                AND DATE(a.timestamp AT TIME ZONE :timezone) <= :end_date
+            ORDER BY a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone), a.timestamp ASC
+        ),
+        last_out_details AS (
+            SELECT DISTINCT ON (a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone))
+                a.employee_id,
+                DATE(a.timestamp AT TIME ZONE :timezone) as attendance_date,
+                a.timestamp as last_out_time,
+                a.distance_from_marking as last_out_distance,
+                l.name as last_out_location
+            FROM attendance a
+            JOIN geomarking l ON a.geo_marking_id = l.id
+            WHERE a.status = 'OUT'
+                AND a.tenant_id = :tenant_id
+                AND ( a.employee_id = :employee_id)
+                AND DATE(a.timestamp AT TIME ZONE :timezone) >= :start_date
+                AND DATE(a.timestamp AT TIME ZONE :timezone) <= :end_date
+            ORDER BY a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone), a.timestamp DESC
+        ),
+        last_entry_details AS (
+            SELECT DISTINCT ON (a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone))
+                a.employee_id,
+                DATE(a.timestamp AT TIME ZONE :timezone) as attendance_date,
+                a.status as last_entry_status
+            FROM attendance a
+            WHERE a.tenant_id = :tenant_id
+                AND ( a.employee_id = :employee_id)
+                AND DATE(a.timestamp AT TIME ZONE :timezone) >= :start_date
+                AND DATE(a.timestamp AT TIME ZONE :timezone) <= :end_date
+            ORDER BY a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone), a.timestamp DESC
+        ),
+        in_counts AS (
+            SELECT
+                employee_id,
+                DATE(timestamp AT TIME ZONE :timezone) as attendance_date,
+                COUNT(*) as total_in_count
+            FROM attendance
+            WHERE status = 'IN'
+                AND tenant_id = :tenant_id
+                AND ( employee_id = :employee_id)
+                AND DATE(timestamp AT TIME ZONE :timezone) >= :start_date
+                AND DATE(timestamp AT TIME ZONE :timezone) <= :end_date
+            GROUP BY employee_id, DATE(timestamp AT TIME ZONE :timezone)
+        )
+        SELECT
+            fi.employee_id,
+            fi.attendance_date,
+            fi.first_in_time,
+            fi.first_in_location,
+            fi.first_in_distance,
+            CASE
+                WHEN le.last_entry_status = 'IN' THEN NULL
+                ELSE lo.last_out_time
+            END as last_out_time,
+            CASE
+                WHEN le.last_entry_status = 'IN' THEN NULL
+                ELSE lo.last_out_location
+            END as last_out_location,
+            CASE
+                WHEN le.last_entry_status = 'IN' THEN NULL
+                ELSE lo.last_out_distance
+            END as last_out_distance,
+            ic.total_in_count,
+            CASE
+                WHEN le.last_entry_status = 'IN' THEN 'INCOMPLETE'
+                ELSE 'COMPLETE'
+            END as day_status
+        FROM first_in_details fi
+        JOIN in_counts ic USING (employee_id, attendance_date)
+        JOIN last_entry_details le USING (employee_id, attendance_date)
+        LEFT JOIN last_out_details lo USING (employee_id, attendance_date)
+        ORDER BY fi.employee_id, fi.attendance_date
+        """)
+    
+        result = (
+            await db.exec(
+                query.params(
+                    timezone=settings.timezone,
+                    tenant_id=tenant_id,
+                    employee_id=employee_id,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+            )
+        ).all()
+        
+        attendance_card = []
+        for row in result:
+            attendance_card.append(dict(row._mapping))
+        return attendance_card
+    
     async def get_tenant(self, tenant_id: uuid.UUID, db: AsyncSession) -> Tenant | None:
         """
         Get tenant by ID.

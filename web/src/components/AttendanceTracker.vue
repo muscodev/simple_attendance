@@ -17,13 +17,13 @@
             <p> ✅ Mark In</p>
 
           </div>
-          <div v-if="me?.today_in.timestamp" class="text-sm text-gray-600">
-            <p> {{ new Date(me.today_in.timestamp).toLocaleTimeString() }}</p>
+          <div v-if="me?.today_in?.timestamp" class="text-sm text-gray-600">
+            <p> {{ new Date(me.today_in?.timestamp).toLocaleTimeString() }}</p>
             <p>
               <a :href="`https://www.google.com/maps?q=${me?.state?.latitude},${me?.state?.latitude}`" target="_blank">
 
-                {{ me?.state_near.name }}({{
-                me?.state.distance_from_marking.toFixed(2) }} Km)
+                {{ me?.state_near?.name }}({{
+                me?.state?.distance_from_marking?.toFixed(2) }} Km)
 
               </a>
             </p>
@@ -40,12 +40,12 @@
 
           </div>
           <div v-if="me?.state?.status == 'OUT'" class="text-sm text-gray-600">
-            <p> {{ new Date(me.state.timestamp).toLocaleTimeString() }}</p>
+            <p> {{ new Date(me.state?.timestamp).toLocaleTimeString() }}</p>
             <p>
               <a :href="`https://www.google.com/maps?q=${me?.state?.latitude},${me?.state?.latitude}`" target="_blank">
 
-                {{ me?.state_near.name }}({{
-                me?.state.distance_from_marking.toFixed(2) }} Km)
+                {{ me?.state_near?.name }}({{
+                me?.state?.distance_from_marking?.toFixed(2) }} Km)
 
               </a>
             </p>
@@ -61,7 +61,7 @@
           </div>
           <div>
             <p v-if="me?.state?.status == 'OUT'" class="text-sm text-gray-600">
-              {{ calculateWorkDuration(new Date(me.today_in.timestamp), new Date(me.state.timestamp)) }}
+              {{ calculateWorkDuration(new Date(me?.today_in?.timestamp), new Date(me?.state?.timestamp)) }}
             </p>
           </div>
         </n-flex>

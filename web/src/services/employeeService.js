@@ -1,4 +1,4 @@
-import api from "../utlis/api"
+import api from "../utils/api"
 
 export function getme(){
     return api.get(`/api/employee/me`);
@@ -16,6 +16,10 @@ export function empMarkIn(coordinate){
 
 export function empMarkOut(coordinate){
     return api.post(`/api/employee/markout`,coordinate);
+}
+
+export function get_attendance_card(){
+    return api.get(`/api/employee/attendance_card`);
 }
 
 

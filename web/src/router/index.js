@@ -4,13 +4,14 @@ import AdminLogin from '../views/Admin/AdminLogin.vue'
 import EmployeePage from '../views/Admin/EmployeePage.vue'
 import EmployeeMobile from '../views/Employee/EmployeeMobile.vue'
 import GeoMarkingList from '../components/GeoMarkingList.vue'
-import { getDeviceType  } from '../utlis/general.js'
+import { getDeviceType  } from '../utils/general.js'
 import NotAllowed from '../components/NotAllowed.vue'
 import OwnerLoginPage from '../views/Owner/LoginPage.vue'
 import OwnerDashBoard from '../views/Owner/DashBoard.vue'
 import AdminLayout from '../views/Admin/AdminLayout.vue'
 import EmpLoginPage from '../views/Employee/LoginPage.vue'
 import EmployeeAttendance from '../components/EmployeeAttendance.vue'
+import EmployeeDailyAttendance from '../components/EmployeeDailyAttendance.vue'
 
 let device = getDeviceType();
 console.log(device);
@@ -59,7 +60,11 @@ routes.push(
     {
       path: '/e/:token',
       component: EmpLoginPage
-    }
+    },
+    {
+      path: '/attendance',
+      component: EmployeeDailyAttendance
+    }    
 )
 }else{
   routes.push(
