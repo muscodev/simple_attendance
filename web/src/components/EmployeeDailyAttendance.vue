@@ -180,8 +180,7 @@ const getCardClass = (day) => {
   return 'border-l-4 border-gray-300';
 };
 
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr);
+const formatDate = (date) => {
   const day = date.getDate();
   const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
   return `${day} ${dayName}`;
@@ -224,7 +223,7 @@ const generateAttendanceData = () => {
     const attendance = generateDummyAttendance(currentDate);
     
     attendanceData.value.push({
-      date: currentDate.toLocaleDateString(),
+      date: currentDate,
       ...attendance
     });
   }
