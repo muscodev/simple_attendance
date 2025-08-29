@@ -451,7 +451,8 @@ class EmployeeService:
         end_date: date,
         db: AsyncSession,
     ) -> list:
-        query = text("""
+        query = text(
+            """
         WITH first_in_details AS (
             SELECT DISTINCT ON (a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone))
                 a.employee_id,
@@ -466,7 +467,10 @@ class EmployeeService:
                 AND ( a.employee_id = :employee_id)
                 AND DATE(a.timestamp AT TIME ZONE :timezone) >= :start_date
                 AND DATE(a.timestamp AT TIME ZONE :timezone) <= :end_date
-            ORDER BY a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone), a.timestamp ASC
+            ORDER BY
+                a.employee_id,
+                DATE(a.timestamp AT TIME ZONE :timezone),
+                a.timestamp ASC
         ),
         last_out_details AS (
             SELECT DISTINCT ON (a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone))
@@ -482,7 +486,10 @@ class EmployeeService:
                 AND ( a.employee_id = :employee_id)
                 AND DATE(a.timestamp AT TIME ZONE :timezone) >= :start_date
                 AND DATE(a.timestamp AT TIME ZONE :timezone) <= :end_date
-            ORDER BY a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone), a.timestamp DESC
+            ORDER BY
+                a.employee_id,
+                DATE(a.timestamp AT TIME ZONE :timezone),
+                a.timestamp DESC
         ),
         last_entry_details AS (
             SELECT DISTINCT ON (a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone))
@@ -494,7 +501,10 @@ class EmployeeService:
                 AND ( a.employee_id = :employee_id)
                 AND DATE(a.timestamp AT TIME ZONE :timezone) >= :start_date
                 AND DATE(a.timestamp AT TIME ZONE :timezone) <= :end_date
-            ORDER BY a.employee_id, DATE(a.timestamp AT TIME ZONE :timezone), a.timestamp DESC
+            ORDER BY
+                a.employee_id,
+                DATE(a.timestamp AT TIME ZONE :timezone),
+                a.timestamp DESC
         ),
         in_counts AS (
             SELECT
@@ -537,8 +547,9 @@ class EmployeeService:
         JOIN last_entry_details le USING (employee_id, attendance_date)
         LEFT JOIN last_out_details lo USING (employee_id, attendance_date)
         ORDER BY fi.employee_id, fi.attendance_date
-        """)
-    
+        """
+        )
+
         result = (
             await db.exec(
                 query.params(
@@ -550,12 +561,12 @@ class EmployeeService:
                 )
             )
         ).all()
-        
+
         attendance_card = []
         for row in result:
             attendance_card.append(dict(row._mapping))
         return attendance_card
-    
+
     async def get_tenant(self, tenant_id: uuid.UUID, db: AsyncSession) -> Tenant | None:
         """
         Get tenant by ID.
