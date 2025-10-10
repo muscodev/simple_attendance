@@ -75,7 +75,8 @@ Works on any modern browser with PWA support:
 - Safari (iOS, macOS)
 
 
+![Screenshot](./images/mobile_dash.png)
 
-## Support
+![Screenshot](./images/create_employee.jpeg)
 
-For issues and questions, please use the GitHub issue tracker.
+![Screenshot](./images/clear_session.jpg)
