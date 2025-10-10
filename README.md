@@ -2,6 +2,9 @@
   <span style="display: inline-flex; align-items: center;">
     <img src="web/public/icon-small.png" alt="icon" style=" margin-right: 10px;">
     <h1 style="margin: 0;">Simple Attendance</h1>
+    
+A location-based attendance tracking system designed for small businesses with mobile employees in field operations like support, maintenance, and service teams.
+
   </span>
 
 ##
@@ -12,9 +15,7 @@
   </div>
 </div>
 
-# Simple Attendance
 
-A location-based attendance tracking system designed for small businesses with mobile employees in field operations like support, maintenance, and service teams.
 
 ## Overview
 
